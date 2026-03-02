@@ -7,9 +7,9 @@ export async function apiRequest(
     const token = localStorage.getItem("auth-storage");
     const parsedToken = token ? JSON.parse(token).state.token : null;
 
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
         "Content-Type": "application/json",
-        ...options.headers,
+        ...(options.headers as Record<string, string>),
     };
 
     if (parsedToken) {
@@ -51,6 +51,18 @@ export const api = {
 
     resetPassword: (data: { token: string; password: string }) =>
         apiRequest("/auth/reset-password", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }),
+
+    sendOtp: (data: { email: string }) =>
+        apiRequest("/auth/send-otp", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }),
+
+    verifyOtp: (data: { email: string; otp: string; newPassword: string }) =>
+        apiRequest("/auth/verify-otp", {
             method: "POST",
             body: JSON.stringify(data),
         }),

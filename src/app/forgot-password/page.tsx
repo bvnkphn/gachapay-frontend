@@ -25,9 +25,9 @@ export default function ForgotPasswordPage() {
 
         setIsLoading(true);
         try {
-            await api.forgotPassword({ email });
+            await api.sendOtp({ email });
             setSent(true);
-            toast.success("ส่งลิงก์รีเซ็ตรหัสผ่านไปยังอีเมลแล้ว");
+            toast.success("ส่งรหัส OTP ไปยังอีเมลแล้ว");
         } catch (error: any) {
             toast.error(error.message || "เกิดข้อผิดพลาด");
         } finally {
@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
                         <CardHeader className="space-y-1 pb-4">
                             <CardTitle className="text-2xl font-bold text-center">ตรวจสอบอีเมล</CardTitle>
                             <CardDescription className="text-center">
-                                เราได้ส่งลิงก์รีเซ็ตรหัสผ่านไปยัง
+                                เราได้ส่งรหัส OTP ไปยัง
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -62,15 +62,21 @@ export default function ForgotPasswordPage() {
                             </div>
 
                             <p className="text-sm text-muted-foreground text-center">
-                                กรุณาตรวจสอบอีเมลและคลิกลิงก์เพื่อรีเซ็ตรหัสผ่าน
+                                กรุณาตรวจสอบอีเมลและกรอกรหัส OTP 6 หลัก
                                 <br />
-                                ลิงก์จะหมดอายุใน 1 ชั่วโมง
+                                รหัส OTP จะหมดอายุใน 10 นาที
                             </p>
 
-                            <Link href="/login">
+                            <Link href={`/verify-otp?email=${encodeURIComponent(email)}`}>
                                 <Button className="w-full bg-gradient-cyber hover:opacity-90 text-background font-semibold">
+                                    ไปกรอกรหัส OTP
+                                </Button>
+                            </Link>
+
+                            <Link href="/forgot-password">
+                                <Button variant="ghost" className="w-full">
                                     <ArrowLeft className="w-4 h-4 mr-2" />
-                                    กลับไปหน้าเข้าสู่ระบบ
+                                    ส่งรหัส OTP ใหม่
                                 </Button>
                             </Link>
                         </CardContent>
@@ -97,7 +103,7 @@ export default function ForgotPasswordPage() {
                     <CardHeader className="space-y-1 pb-4">
                         <CardTitle className="text-2xl font-bold text-center">ลืมรหัสผ่าน</CardTitle>
                         <CardDescription className="text-center">
-                            กรอกอีเมลของคุณเพื่อรับลิงก์รีเซ็ตรหัสผ่าน
+                            กรอกอีเมลของคุณเพื่อรับรหัส OTP
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -126,7 +132,7 @@ export default function ForgotPasswordPage() {
                                 {isLoading ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
                                 ) : (
-                                    "ส่งลิงก์รีเซ็ตรหัสผ่าน"
+                                    "ส่งรหัส OTP"
                                 )}
                             </Button>
                         </form>

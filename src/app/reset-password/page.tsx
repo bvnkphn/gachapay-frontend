@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Lock, Gamepad2, Loader2, Eye, EyeOff, Check, X } from "lucide-react";
@@ -14,13 +14,45 @@ import { api } from "@/lib/api";
 export default function ResetPasswordPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const token = searchParams.get("token");
+    const emailParam = searchParams.get("email");
 
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [otpData, setOtpData] = useState<{ email: string; otp: string; timestamp: number } | null>(null);
+
+    useEffect(() => {
+        // Get OTP data from sessionStorage
+        const storedData = sessionStorage.getItem("otp_data");
+        if (!storedData || !emailParam) {
+            router.push("/forgot-password");
+            return;
+        }
+
+        try {
+            const data = JSON.parse(storedData);
+            // Check if OTP data is still valid (within 10 minutes)
+            const now = Date.now();
+            const elapsed = now - data.timestamp;
+            if (elapsed > 600000) { // 10 minutes
+                toast.error("รหัส OTP หมดอายุแล้ว กรุณาขอรหัสใหม่");
+                sessionStorage.removeItem("otp_data");
+                router.push("/forgot-password");
+                return;
+            }
+
+            if (data.email !== emailParam) {
+                router.push("/forgot-password");
+                return;
+            }
+
+            setOtpData(data);
+        } catch (error) {
+            router.push("/forgot-password");
+        }
+    }, [emailParam, router]);
 
     const passwordChecks = {
         length: password.length >= 8,
@@ -36,59 +68,35 @@ export default function ResetPasswordPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!token) {
-            toast.error("ไม่พบ token");
-            return;
-        }
-
-        if (!isPasswordValid) {
+        if (!otpData || !isPasswordValid) {
             toast.error("กรุณาตั้งรหัสผ่านตามเงื่อนไขที่กำหนด");
             return;
         }
 
         setIsLoading(true);
         try {
-            await api.resetPassword({ token, password });
+            await api.verifyOtp({
+                email: otpData.email,
+                otp: otpData.otp,
+                newPassword: password,
+            });
             toast.success("รีเซ็ตรหัสผ่านสำเร็จ");
+            sessionStorage.removeItem("otp_data");
             router.push("/login");
         } catch (error: any) {
             toast.error(error.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ");
+            // If OTP is invalid, redirect back to forgot-password
+            if (error.message?.includes("OTP") || error.message?.includes("expired")) {
+                sessionStorage.removeItem("otp_data");
+                setTimeout(() => router.push("/forgot-password"), 2000);
+            }
         } finally {
             setIsLoading(false);
         }
     };
 
-    if (!token) {
-        return (
-            <div className="min-h-screen flex items-center justify-center px-4 py-12 pb-24">
-                <div className="w-full max-w-md">
-                    <div className="text-center mb-8 pt-20">
-                        <div className="inline-flex items-center gap-3 mb-4">
-                            <div className="w-12 h-12 rounded-xl bg-gradient-cyber flex items-center justify-center glow-primary">
-                                <Gamepad2 className="w-7 h-7 text-background" />
-                            </div>
-                            <span className="text-3xl font-bold text-glow">CYBERPAY</span>
-                        </div>
-                    </div>
-
-                    <Card className="glass-card border-border/50">
-                        <CardHeader className="space-y-1 pb-4">
-                            <CardTitle className="text-2xl font-bold text-center">ลิงก์ไม่ถูกต้อง</CardTitle>
-                            <CardDescription className="text-center">
-                                ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Link href="/forgot-password">
-                                <Button className="w-full bg-gradient-cyber hover:opacity-90 text-background font-semibold">
-                                    ขอลิงก์ใหม่
-                                </Button>
-                            </Link>
-                        </CardContent>
-                    </Card>
-                </div>
-            </div>
-        );
+    if (!otpData) {
+        return null;
     }
 
     return (
@@ -185,6 +193,12 @@ export default function ResetPasswordPage() {
                                 )}
                             </Button>
                         </form>
+
+                        <Link href="/forgot-password">
+                            <Button variant="ghost" className="w-full">
+                                ยกเลิก
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
