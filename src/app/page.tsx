@@ -5,6 +5,7 @@ import { Zap, ArrowRight, Shield, Clock, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search-bar";
 import { GameCard } from "@/components/game-card";
+import { useLanguage } from "@/components/language-context";
 
 const features = [
     {
@@ -41,6 +42,7 @@ const games = [
 ];
 
 export default function Home() {
+    const { t } = useLanguage();
     return (
         <div className="min-h-screen">
             {/* Hero Section */}
@@ -55,7 +57,7 @@ export default function Home() {
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/30 mb-6">
                             <Zap className="w-4 h-4 text-primary" />
                             <span className="text-sm text-primary font-medium">
-                                แพลตฟอร์มเติมเกมอันดับ 1
+                                {t.platform}
                             </span>
                         </div>
 
