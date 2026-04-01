@@ -61,11 +61,11 @@ export default function Home() {
 
                         {/* Title */}
                         <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                            <span className="text-foreground">เติมเกม</span>
+                            <span className="text-foreground">{t.topup}</span>
                             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                                 {" "}ง่าย รวดเร็ว{" "}
                             </span>
-                            <span className="text-foreground">ปลอดภัย</span>
+                            <span className="text-foreground">{t.safe}</span>
                         </h1>
 
                         {/* Subtitle */}

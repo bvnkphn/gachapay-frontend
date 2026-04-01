@@ -5,6 +5,17 @@ export type Lang = "th" | "en";
 
 const translations = {
   th: {
+
+    // game card
+    playNow: "เล่นเลย",
+    viewDetails: "ดูรายละเอียด",
+    startFrom: "เริ่มต้นที่",
+    availablePackages: "แพ็กเกจที่มีให้เลือก", 
+    package: "แพ็กเกจ",
+    price: "ราคา",
+    buyNow: "ซื้อเลย",
+
+
     // Footer
     footerAboutUs: "เกี่ยวกับเรา",
     footerAboutDesc: "CYBERPAY คือแพลตฟอร์มเติมเกมและซื้อไอเทมออนไลน์ที่เชื่อถือได้ ให้บริการรวดเร็วและปลอดภัย",
@@ -40,6 +51,10 @@ const translations = {
     supportDesc: "ทีมงานพร้อมช่วยเหลือ",
     always: "24/7",
     alwaysDesc: "บริการตลอด 24 ชั่วโมง",
+    showMore: "ดูเพิ่มเติม",
+    
+    
+    
     
     login: "เข้าสู่ระบบ",
     register: "สมัครสมาชิก",
@@ -206,6 +221,15 @@ const translations = {
     },
   },
   en: {
+    //game card
+    playNow: "Play Now",
+    viewDetails: "View Details",
+    startFrom: "Start from",
+    availablePackages: "Available Packages",
+    package: "Package",
+    price: "Price",
+    buyNow: "Buy Now",
+    
     // Footer
     footerAboutUs: "About Us",
     footerAboutDesc: "CYBERPAY is a trusted platform for game top-up and online item purchase. Fast and secure service.",
@@ -239,6 +263,7 @@ const translations = {
     supportDesc: "Our team is ready to help",
     always: "24/7",
     alwaysDesc: "Service available 24/7",
+    showMore: "Show more",
     
     login: "Login",
     register: "Register",
