@@ -5,6 +5,43 @@ export type Lang = "th" | "en";
 
 const translations = {
   th: {
+
+    // game card
+    playNow: "เล่นเลย",
+    viewDetails: "ดูรายละเอียด",
+    startFrom: "เริ่มต้นที่",
+    availablePackages: "แพ็กเกจที่มีให้เลือก", 
+    package: "แพ็กเกจ",
+    price: "ราคา",
+    buyNow: "ซื้อเลย",
+
+
+    // Footer
+    footerAboutUs: "เกี่ยวกับเรา",
+    footerAboutDesc: "CYBERPAY คือแพลตฟอร์มเติมเกมและซื้อไอเทมออนไลน์ที่เชื่อถือได้ ให้บริการรวดเร็วและปลอดภัย",
+    footerContact: "ติดต่อ",
+    footerEmailLabel: "อีเมล",
+    footerTelLabel: "โทร",
+    footerPaymentMethods: "ช่องทางชำระเงิน",
+    footerBankTransfer: "ธนาคาร/โอนเงิน",
+    footerCreditCard: "บัตรเครดิต/เดบิต",
+    footerLegalSocial: "ข้อกำหนด & โซเชียล",
+    footerTerms: "ข้อตกลงการใช้บริการ",
+    footerPrivacy: "นโยบายความเป็นส่วนตัว",
+    footerTrueMoney: "ทรูมันนี่ วอลเล็ท",
+    footerPromptPay: "พร้อมเพย์",
+    //Header
+
+      headerHome: "หน้าแรก",
+      headerTopUp: "เติมเงิน",
+      headerVip: "VIP",
+      headerSupport: "ช่วยเหลือ",
+    // search page
+    search: "ค้นหาเกม...",
+    noGamesFound: "ไม่พบเกมที่ค้นหา",
+
+
+    // Common
     platform: "แพลตฟอร์มเติมเกมอันดับ 1",
     fast: "เติมไว",
     fastDesc: "รับไอเทมภายใน 1-5 นาที",
@@ -14,7 +51,11 @@ const translations = {
     supportDesc: "ทีมงานพร้อมช่วยเหลือ",
     always: "24/7",
     alwaysDesc: "บริการตลอด 24 ชั่วโมง",
-    search: "ค้นหาเกม...",
+    showMore: "ดูเพิ่มเติม",
+    
+    
+    
+    
     login: "เข้าสู่ระบบ",
     register: "สมัครสมาชิก",
     noAccount: "ยังไม่มีบัญชี?",
@@ -234,6 +275,39 @@ const translations = {
     },
   },
   en: {
+    //game card
+    playNow: "Play Now",
+    viewDetails: "View Details",
+    startFrom: "Start from",
+    availablePackages: "Available Packages",
+    package: "Package",
+    price: "Price",
+    buyNow: "Buy Now",
+    
+    // Footer
+    footerAboutUs: "About Us",
+    footerAboutDesc: "CYBERPAY is a trusted platform for game top-up and online item purchase. Fast and secure service.",
+    footerContact: "Contact",
+    footerEmailLabel: "Email",
+    footerTelLabel: "Tel",
+    footerPaymentMethods: "Payment Methods",
+    footerBankTransfer: "Bank Transfer",
+    footerCreditCard: "Credit/Debit Card",
+    footerLegalSocial: "Legal & Social",
+    footerTerms: "Terms of Service",
+    footerPrivacy: "Privacy Policy",
+    footerTrueMoney: "TrueMoney Wallet",
+    footerPromptPay: "PromptPay",
+    // Header
+      headerHome: "Home",
+      headerTopUp: "Top-up",
+      headerVip: "VIP",
+      headerSupport: "Support",
+    // search page
+    search: "Search games...",
+    noGamesFound: "No games found matching your search",
+
+    // Common
     platform: "#1 Game Top-up Platform",
     fast: "Fast",
     fastDesc: "Receive items in 1-5 minutes",
@@ -243,7 +317,8 @@ const translations = {
     supportDesc: "Our team is ready to help",
     always: "24/7",
     alwaysDesc: "Service available 24/7",
-    search: "Search games...",
+    showMore: "Show more",
+    
     login: "Login",
     register: "Register",
     noAccount: "Don't have an account?",
