@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/language-context";
 import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { api } from "@/lib/api";
 
 interface GamePackage {
     id: string;
@@ -74,98 +75,29 @@ export default function GameTopupPage() {
     }, [user]);
 
     useEffect(() => {
-        // Mock data for frontend development
-        const mockGames: Record<string, Game> = {
-            "valorant": {
-                id: 1,
-                name: "Valorant",
-                slug: "valorant",
-                description: "A free-to-play first-person tactical shooter developed by Riot Games.",
-                image: "https://images.unsplash.com/photo-1614294148104-fceaa55299c3?w=500&h=300&fit=crop",
-                label: "HOT",
-                fields: [
-                    { name: "riotId", label: "Riot ID (TagName)", placeholder: "ป้อน Riot ID#TAG", required: true },
-                ],
-                packages: [
-                    { id: "1", name: "Week Pass", description: "Weekly benefits", count: "Weekly Pass", price: 99 },
-                    { id: "2", name: "475 VP", description: "", count: "475 VP", price: 100 },
-                    { id: "3", name: "1000 VP", description: "", count: "1000 VP", price: 210 },
-                    { id: "4", name: "2000 VP", description: "", count: "2000 VP", price: 420 },
-                    { id: "5", name: "2500 VP", description: "", count: "2500 VP", price: 525 },
-                    { id: "6", name: "5000 VP", description: "", count: "5000 VP", price: 1050 },
-                    { id: "7", name: "10000 VP", description: "", count: "10000 VP", price: 2100 },
-                    { id: "8", name: "15000 VP", description: "", count: "15000 VP", price: 3150 },
-                ],
-            },
-            "dota2": {
-                id: 2,
-                name: "Dota 2",
-                slug: "dota2",
-                description: "Free-to-play multiplayer online battle arena game by Valve.",
-                image: "https://images.unsplash.com/photo-1549887534-7ebf0d309eca?w=500&h=300&fit=crop",
-                label: "NEW",
-                fields: [
-                    { name: "userId", label: "User ID", placeholder: "ป้อน User ID", required: true },
-                    { 
-                        name: "server", 
-                        label: "Server", 
-                        placeholder: "เลือก Server", 
-                        required: true,
-                        options: [
-                            { label: "US East", value: "us-east" },
-                            { label: "US West", value: "us-west" },
-                            { label: "Europe", value: "europe" },
-                            { label: "Southeast Asia", value: "sea" },
-                            { label: "China", value: "china" },
-                        ]
-                    },
-                ],
-                packages: [
-                    { id: "1", name: "Weekly Pass", description: "Weekly benefits", count: "Weekly Pass", price: 99 },
-                    { id: "2", name: "5 Diamonds", description: "", count: "5 Diamonds", price: 27.5 },
-                    { id: "3", name: "11 Diamonds + 1 Bonus", description: "", count: "11 Diamonds + 1 Bonus", price: 54.5 },
-                    { id: "4", name: "25 Diamonds + 3 Bonus", description: "", count: "25 Diamonds + 3 Bonus", price: 137.5 },
-                    { id: "5", name: "27 Diamonds + 4 Bonus", description: "", count: "27 Diamonds + 4 Bonus", price: 165 },
-                    { id: "6", name: "387 Diamonds + 43 Bonus", description: "", count: "387 Diamonds + 43 Bonus", price: 2200 },
-                    { id: "7", name: "1124 Diamonds + 282 Bonus", description: "", count: "1124 Diamonds + 282 Bonus", price: 6500 },
-                    { id: "8", name: "4203 Diamonds + 937 Bonus", description: "", count: "4203 Diamonds + 937 Bonus", price: 27500 },
-                ],
-            },
-            "pubg": {
-                id: 3,
-                name: "PUBG Mobile",
-                slug: "pubg",
-                description: "PlayerUnknown's Battlegrounds - Battle royale game.",
-                image: "https://images.unsplash.com/photo-1556725783-b5d8732ef5d1?w=500&h=300&fit=crop",
-                label: "NONE",
-                fields: [
-                    { name: "uid", label: "UID", placeholder: "ป้อน UID", required: true },
-                    { name: "sid", label: "SID", placeholder: "ป้อน SID", required: true },
-                ],
-                packages: [
-                    { id: "1", name: "325 UC", description: "", count: "325 UC", price: 100 },
-                    { id: "2", name: "1000 UC", description: "", count: "1000 UC", price: 300 },
-                    { id: "3", name: "2000 UC", description: "", count: "2000 UC", price: 600 },
-                    { id: "4", name: "5000 UC", description: "", count: "5000 UC", price: 1500 },
-                ],
-            },
-        };
-
         const loadGame = async () => {
             try {
                 setLoading(true);
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
                 const slug = params.slug as string;
-                const gameData = mockGames[slug];
+                
+                // Fetch game data from backend API
+                const response = await api.getGame(slug);
+                
+                let gameData = response && response.data ? response.data : response;
                 
                 if (gameData) {
+                    // Ensure fields and packages are defined with defaults
+                    gameData = {
+                        ...gameData,
+                        fields: gameData.fields || [],
+                        packages: gameData.packages || gameData.items || [],
+                    };
                     setGame(gameData);
                 } else {
-                    setError(t.gameNotFound);
+                    setError(t.gameNotFound || "Game not found");
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : t.failedLoadGame);
+                setError(err instanceof Error ? err.message : t.failedLoadGame || "Failed to load game");
                 console.error("Error loading game:", err);
             } finally {
                 setLoading(false);
@@ -175,7 +107,7 @@ export default function GameTopupPage() {
         if (params.slug) {
             loadGame();
         }
-    }, [params.slug]);
+    }, [params.slug, t]);
 
     const handleSubmit = async () => {
         // Validation
@@ -210,21 +142,34 @@ export default function GameTopupPage() {
             setSubmitting(true);
             setError(null);
 
-            // Simulate order creation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            setSuccess(true);
-            setOrderId(`ORD-${Date.now()}`);
+            // Create order via backend API
+            const orderData = {
+                gameId: game.id,
+                packageId: selectedPackage.id,
+                userInput: formData,
+                email: isLoggedIn ? user?.email : formData.email,
+                couponCode: appliedCoupon?.code,
+            };
 
-            setTimeout(() => {
-                if (isLoggedIn) {
-                    router.push(`/account/balance?order=${orderId}`);
-                } else {
-                    router.push(`/?order=${orderId}`);
-                }
-            }, 2000);
+            const response = await api.createOrder(orderData);
+            
+            if (response && response.data) {
+                setSuccess(true);
+                setOrderId(response.data.id || `ORD-${Date.now()}`);
+
+                setTimeout(() => {
+                    if (isLoggedIn) {
+                        router.push(`/account/balance?order=${response.data.id}`);
+                    } else {
+                        router.push(`/?order=${response.data.id}`);
+                    }
+                }, 2000);
+            } else {
+                throw new Error("Failed to create order");
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : t.failedCreateOrder);
+            setError(err instanceof Error ? err.message : t.failedCreateOrder || "Failed to create order");
+            console.error("Order creation error:", err);
         } finally {
             setSubmitting(false);
         }
@@ -395,46 +340,42 @@ export default function GameTopupPage() {
                                 </div>
                                 <h2 className="text-lg font-bold">{t.Topupinfo}</h2>
                             </div>
-                            <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                {game.fields.map((field) => (
-                                    <div key={field.name}>
-                                        <label className="block text-sm font-medium mb-2">
-                                            {field.label}
-                                            {field.required && <span className="text-red-500">*</span>}
-                                        </label>
-                                        {field.options ? (
-                                            <select
-                                                value={formData[field.name] || ""}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, [field.name]: e.target.value });
-                                                    if (error) setError(null);
-                                                }}
-                                                disabled={submitting}
-                                                className="glass-input w-full px-3 py-2 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                                            >
-                                                <option value="">{field.placeholder}</option>
-                                                {field.options.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <Input
-                                                type={field.type || "text"}
-                                                placeholder={field.placeholder}
-                                                value={formData[field.name] || ""}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, [field.name]: e.target.value });
-                                                    if (error) setError(null);
-                                                }}
-                                                className="glass-input"
-                                                disabled={submitting}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            {game.fields && game.fields.length > 0 ? (
+                                <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                    {game.fields.map((field) => (
+                                        <div key={field.name}>
+                                            <label className="block text-sm font-medium mb-2">
+                                                {field.label}
+                                                {field.required && <span className="text-red-500">*</span>}
+                                            </label>
+                                            <div className="relative">
+                                                <Input
+                                                    type={field.type || "text"}
+                                                    placeholder={field.placeholder}
+                                                    value={formData[field.name] || ""}
+                                                    onChange={(e) => {
+                                                        setFormData({ ...formData, [field.name]: e.target.value });
+                                                        if (error) setError(null);
+                                                    }}
+                                                    className="glass-input"
+                                                    disabled={submitting}
+                                                    list={field.options && field.options.length > 0 ? `options-${field.name}` : undefined}
+                                                />
+                                                {field.options && field.options.length > 0 && (
+                                                    <datalist id={`options-${field.name}`}>
+                                                        {field.options.map((opt) => (
+                                                            <option key={opt.value} value={opt.value} label={opt.label} />
+                                                        ))}
+                                                    </datalist>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">{t.noFieldsRequired || "No additional information required"}</p>
+                            )}
                         </Card>
 
                         {/* Packages Grid */}
@@ -445,45 +386,49 @@ export default function GameTopupPage() {
                                 </div>
                                 <h2 className="text-lg font-bold">{t.Choosepackage}</h2>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {game.packages.map((pkg) => (
-                                    <div
-                                        key={pkg.id}
-                                        className="cursor-pointer group"
-                                        onClick={() => {
-                                            setSelectedPackage(pkg);
-                                            if (error) setError(null);
-                                        }}
-                                    >
-                                        <Card
-                                            className="p-3 h-full transition-all duration-300 hover:glow-primary border-2 rounded-lg"
-                                            style={{
-                                                background: "rgba(100, 50, 255, 0.1)",
-                                                borderColor:
-                                                    selectedPackage?.id === pkg.id
-                                                        ? "hsl(var(--primary))"
-                                                        : "rgba(100, 50, 255, 0.3)",
-                                                backgroundColor:
-                                                    selectedPackage?.id === pkg.id
-                                                        ? "rgba(100, 50, 255, 0.2)"
-                                                        : "rgba(100, 50, 255, 0.1)",
+                            {game.packages && game.packages.length > 0 ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {game.packages.map((pkg) => (
+                                        <div
+                                            key={pkg.id}
+                                            className="cursor-pointer group"
+                                            onClick={() => {
+                                                setSelectedPackage(pkg);
+                                                if (error) setError(null);
                                             }}
                                         >
-                                            <div className="mb-2">
-                                                <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
-                                                <p className="text-sm font-bold text-foreground line-clamp-2">
-                                                    {pkg.count}
-                                                </p>
-                                            </div>
-                                            <div className="pt-2 border-t border-border/50">
-                                                <p className="text-lg font-bold text-primary">
-                                                    ฿ {pkg.price.toFixed(2)}
-                                                </p>
+                                            <Card
+                                                className="p-3 h-full transition-all duration-300 hover:glow-primary border-2 rounded-lg"
+                                                style={{
+                                                    background: "rgba(100, 50, 255, 0.1)",
+                                                    borderColor:
+                                                        selectedPackage?.id === pkg.id
+                                                            ? "hsl(var(--primary))"
+                                                            : "rgba(100, 50, 255, 0.3)",
+                                                    backgroundColor:
+                                                        selectedPackage?.id === pkg.id
+                                                            ? "rgba(100, 50, 255, 0.2)"
+                                                            : "rgba(100, 50, 255, 0.1)",
+                                                }}
+                                            >
+                                                <div className="mb-2">
+                                                    <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
+                                                    <p className="text-sm font-bold text-foreground line-clamp-2">
+                                                        {pkg.count}
+                                                    </p>
+                                                </div>
+                                                <div className="pt-2 border-t border-border/50">
+                                                    <p className="text-lg font-bold text-primary">
+                                                        ฿ {pkg.price.toFixed(2)}
+                                                    </p>
                                             </div>
                                         </Card>
                                     </div>
                                 ))}
-                            </div>
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">{t.noPackages || "No packages available"}</p>
+                            )}
                         </Card>
                     </div>
 
