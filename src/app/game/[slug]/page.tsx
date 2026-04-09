@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/language-context";
 import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/use-auth";
+import { api } from "@/lib/api";
 
 interface GamePackage {
     id: string;
@@ -74,98 +75,29 @@ export default function GameTopupPage() {
     }, [user]);
 
     useEffect(() => {
-        // Mock data for frontend development
-        const mockGames: Record<string, Game> = {
-            "valorant": {
-                id: 1,
-                name: "Valorant",
-                slug: "valorant",
-                description: "A free-to-play first-person tactical shooter developed by Riot Games.",
-                image: "https://images.unsplash.com/photo-1614294148104-fceaa55299c3?w=500&h=300&fit=crop",
-                label: "HOT",
-                fields: [
-                    { name: "riotId", label: "Riot ID (TagName)", placeholder: "ป้อน Riot ID#TAG", required: true },
-                ],
-                packages: [
-                    { id: "1", name: "Week Pass", description: "Weekly benefits", count: "Weekly Pass", price: 99 },
-                    { id: "2", name: "475 VP", description: "", count: "475 VP", price: 100 },
-                    { id: "3", name: "1000 VP", description: "", count: "1000 VP", price: 210 },
-                    { id: "4", name: "2000 VP", description: "", count: "2000 VP", price: 420 },
-                    { id: "5", name: "2500 VP", description: "", count: "2500 VP", price: 525 },
-                    { id: "6", name: "5000 VP", description: "", count: "5000 VP", price: 1050 },
-                    { id: "7", name: "10000 VP", description: "", count: "10000 VP", price: 2100 },
-                    { id: "8", name: "15000 VP", description: "", count: "15000 VP", price: 3150 },
-                ],
-            },
-            "dota2": {
-                id: 2,
-                name: "Dota 2",
-                slug: "dota2",
-                description: "Free-to-play multiplayer online battle arena game by Valve.",
-                image: "https://images.unsplash.com/photo-1549887534-7ebf0d309eca?w=500&h=300&fit=crop",
-                label: "NEW",
-                fields: [
-                    { name: "userId", label: "User ID", placeholder: "ป้อน User ID", required: true },
-                    { 
-                        name: "server", 
-                        label: "Server", 
-                        placeholder: "เลือก Server", 
-                        required: true,
-                        options: [
-                            { label: "US East", value: "us-east" },
-                            { label: "US West", value: "us-west" },
-                            { label: "Europe", value: "europe" },
-                            { label: "Southeast Asia", value: "sea" },
-                            { label: "China", value: "china" },
-                        ]
-                    },
-                ],
-                packages: [
-                    { id: "1", name: "Weekly Pass", description: "Weekly benefits", count: "Weekly Pass", price: 99 },
-                    { id: "2", name: "5 Diamonds", description: "", count: "5 Diamonds", price: 27.5 },
-                    { id: "3", name: "11 Diamonds + 1 Bonus", description: "", count: "11 Diamonds + 1 Bonus", price: 54.5 },
-                    { id: "4", name: "25 Diamonds + 3 Bonus", description: "", count: "25 Diamonds + 3 Bonus", price: 137.5 },
-                    { id: "5", name: "27 Diamonds + 4 Bonus", description: "", count: "27 Diamonds + 4 Bonus", price: 165 },
-                    { id: "6", name: "387 Diamonds + 43 Bonus", description: "", count: "387 Diamonds + 43 Bonus", price: 2200 },
-                    { id: "7", name: "1124 Diamonds + 282 Bonus", description: "", count: "1124 Diamonds + 282 Bonus", price: 6500 },
-                    { id: "8", name: "4203 Diamonds + 937 Bonus", description: "", count: "4203 Diamonds + 937 Bonus", price: 27500 },
-                ],
-            },
-            "pubg": {
-                id: 3,
-                name: "PUBG Mobile",
-                slug: "pubg",
-                description: "PlayerUnknown's Battlegrounds - Battle royale game.",
-                image: "https://images.unsplash.com/photo-1556725783-b5d8732ef5d1?w=500&h=300&fit=crop",
-                label: "NONE",
-                fields: [
-                    { name: "uid", label: "UID", placeholder: "ป้อน UID", required: true },
-                    { name: "sid", label: "SID", placeholder: "ป้อน SID", required: true },
-                ],
-                packages: [
-                    { id: "1", name: "325 UC", description: "", count: "325 UC", price: 100 },
-                    { id: "2", name: "1000 UC", description: "", count: "1000 UC", price: 300 },
-                    { id: "3", name: "2000 UC", description: "", count: "2000 UC", price: 600 },
-                    { id: "4", name: "5000 UC", description: "", count: "5000 UC", price: 1500 },
-                ],
-            },
-        };
-
         const loadGame = async () => {
             try {
                 setLoading(true);
-                await new Promise(resolve => setTimeout(resolve, 300));
-                
                 const slug = params.slug as string;
-                const gameData = mockGames[slug];
+                
+                // Fetch game data from backend API
+                const response = await api.getGame(slug);
+                
+                let gameData = response && response.data ? response.data : response;
                 
                 if (gameData) {
+                    // Ensure fields and packages are defined with defaults
+                    gameData = {
+                        ...gameData,
+                        fields: gameData.fields || [],
+                        packages: gameData.packages || gameData.items || [],
+                    };
                     setGame(gameData);
                 } else {
-                    setError("Game not found");
+                    setError(t.gameNotFound || "Game not found");
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to load game");
+                setError(err instanceof Error ? err.message : t.failedLoadGame || "Failed to load game");
                 console.error("Error loading game:", err);
             } finally {
                 setLoading(false);
@@ -175,7 +107,7 @@ export default function GameTopupPage() {
         if (params.slug) {
             loadGame();
         }
-    }, [params.slug]);
+    }, [params.slug, t]);
 
     const handleSubmit = async () => {
         // Validation
@@ -190,19 +122,19 @@ export default function GameTopupPage() {
         }
 
         if (!selectedPackage) {
-            setError("Please select a package");
+            setError(t.pleaseSelectPackage);
             return;
         }
 
         // Check email for guest checkout
         if (!isLoggedIn && !formData.email.trim()) {
-            setError("Email is required for e-receipt");
+            setError(t.emailRequired);
             return;
         }
 
         // Basic email validation
         if (!isLoggedIn && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            setError("Please enter a valid email address");
+            setError(t.invalidEmail);
             return;
         }
 
@@ -210,21 +142,34 @@ export default function GameTopupPage() {
             setSubmitting(true);
             setError(null);
 
-            // Simulate order creation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            setSuccess(true);
-            setOrderId(`ORD-${Date.now()}`);
+            // Create order via backend API
+            const orderData = {
+                gameId: game.id,
+                packageId: selectedPackage.id,
+                userInput: formData,
+                email: isLoggedIn ? user?.email : formData.email,
+                couponCode: appliedCoupon?.code,
+            };
 
-            setTimeout(() => {
-                if (isLoggedIn) {
-                    router.push(`/account/balance?order=${orderId}`);
-                } else {
-                    router.push(`/?order=${orderId}`);
-                }
-            }, 2000);
+            const response = await api.createOrder(orderData);
+            
+            if (response && response.data) {
+                setSuccess(true);
+                setOrderId(response.data.id || `ORD-${Date.now()}`);
+
+                setTimeout(() => {
+                    if (isLoggedIn) {
+                        router.push(`/account/balance?order=${response.data.id}`);
+                    } else {
+                        router.push(`/?order=${response.data.id}`);
+                    }
+                }, 2000);
+            } else {
+                throw new Error("Failed to create order");
+            }
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to create order");
+            setError(err instanceof Error ? err.message : t.failedCreateOrder || "Failed to create order");
+            console.error("Order creation error:", err);
         } finally {
             setSubmitting(false);
         }
@@ -232,7 +177,7 @@ export default function GameTopupPage() {
 
     const handleApplyCoupon = () => {
         if (!couponCode.trim()) {
-            setError("Please enter a coupon code");
+            setError(t.enterCouponError);
             return;
         }
 
@@ -250,7 +195,7 @@ export default function GameTopupPage() {
             setCouponCode("");
             setError(null);
         } else {
-            setError("Invalid coupon code");
+            setError(t.invalidCouponError);
             setAppliedCoupon(null);
         }
     };
@@ -260,7 +205,7 @@ export default function GameTopupPage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading game...</p>
+                    <p className="text-muted-foreground">{t.loadingGame}</p>
                 </div>
             </div>
         );
@@ -288,8 +233,8 @@ export default function GameTopupPage() {
                             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CheckCircle2 className="w-8 h-8 text-green-500" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">สำเร็จ!</h2>
-                            <p className="text-muted-foreground">คำสั่งซื้อของคุณได้รับการสร้างแล้ว</p>
+                            <h2 className="text-2xl font-bold mb-2">{t.Success}</h2>
+                            <p className="text-muted-foreground">{t.orderCreatedSuccess}</p>
                         </div>
 
                         <div className="bg-primary/10 rounded-lg p-4 mb-6 text-left">
@@ -298,7 +243,7 @@ export default function GameTopupPage() {
                         </div>
 
                         <Button asChild className="w-full">
-                            <Link href="/account/balance">ไปยังบัญชี</Link>
+                            <Link href="/account/balance">{t.goToAccount}</Link>
                         </Button>
                     </Card>
                 </div>
@@ -393,48 +338,44 @@ export default function GameTopupPage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                     1
                                 </div>
-                                <h2 className="text-lg font-bold">ข้อมูลการเติม</h2>
+                                <h2 className="text-lg font-bold">{t.Topupinfo}</h2>
                             </div>
-                            <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                                {game.fields.map((field) => (
-                                    <div key={field.name}>
-                                        <label className="block text-sm font-medium mb-2">
-                                            {field.label}
-                                            {field.required && <span className="text-red-500">*</span>}
-                                        </label>
-                                        {field.options ? (
-                                            <select
-                                                value={formData[field.name] || ""}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, [field.name]: e.target.value });
-                                                    if (error) setError(null);
-                                                }}
-                                                disabled={submitting}
-                                                className="glass-input w-full px-3 py-2 rounded-md border border-input bg-background/50 backdrop-blur-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                                            >
-                                                <option value="">{field.placeholder}</option>
-                                                {field.options.map((opt) => (
-                                                    <option key={opt.value} value={opt.value}>
-                                                        {opt.label}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <Input
-                                                type={field.type || "text"}
-                                                placeholder={field.placeholder}
-                                                value={formData[field.name] || ""}
-                                                onChange={(e) => {
-                                                    setFormData({ ...formData, [field.name]: e.target.value });
-                                                    if (error) setError(null);
-                                                }}
-                                                className="glass-input"
-                                                disabled={submitting}
-                                            />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                            {game.fields && game.fields.length > 0 ? (
+                                <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                                    {game.fields.map((field) => (
+                                        <div key={field.name}>
+                                            <label className="block text-sm font-medium mb-2">
+                                                {field.label}
+                                                {field.required && <span className="text-red-500">*</span>}
+                                            </label>
+                                            <div className="relative">
+                                                <Input
+                                                    type={field.type || "text"}
+                                                    placeholder={field.placeholder}
+                                                    value={formData[field.name] || ""}
+                                                    onChange={(e) => {
+                                                        setFormData({ ...formData, [field.name]: e.target.value });
+                                                        if (error) setError(null);
+                                                    }}
+                                                    className="glass-input"
+                                                    disabled={submitting}
+                                                    list={field.options && field.options.length > 0 ? `options-${field.name}` : undefined}
+                                                />
+                                                {field.options && field.options.length > 0 && (
+                                                    <datalist id={`options-${field.name}`}>
+                                                        {field.options.map((opt) => (
+                                                            <option key={opt.value} value={opt.value} label={opt.label} />
+                                                        ))}
+                                                    </datalist>
+                                                )}
+                                            </div>
+                                        </div>
+                                        
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">{t.noFieldsRequired || "No additional information required"}</p>
+                            )}
                         </Card>
 
                         {/* Packages Grid */}
@@ -443,47 +384,51 @@ export default function GameTopupPage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                     2
                                 </div>
-                                <h2 className="text-lg font-bold">เลือกแพคเกจ</h2>
+                                <h2 className="text-lg font-bold">{t.Choosepackage}</h2>
                             </div>
-                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                {game.packages.map((pkg) => (
-                                    <div
-                                        key={pkg.id}
-                                        className="cursor-pointer group"
-                                        onClick={() => {
-                                            setSelectedPackage(pkg);
-                                            if (error) setError(null);
-                                        }}
-                                    >
-                                        <Card
-                                            className="p-3 h-full transition-all duration-300 hover:glow-primary border-2 rounded-lg"
-                                            style={{
-                                                background: "rgba(100, 50, 255, 0.1)",
-                                                borderColor:
-                                                    selectedPackage?.id === pkg.id
-                                                        ? "hsl(var(--primary))"
-                                                        : "rgba(100, 50, 255, 0.3)",
-                                                backgroundColor:
-                                                    selectedPackage?.id === pkg.id
-                                                        ? "rgba(100, 50, 255, 0.2)"
-                                                        : "rgba(100, 50, 255, 0.1)",
+                            {game.packages && game.packages.length > 0 ? (
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                                    {game.packages.map((pkg) => (
+                                        <div
+                                            key={pkg.id}
+                                            className="cursor-pointer group"
+                                            onClick={() => {
+                                                setSelectedPackage(pkg);
+                                                if (error) setError(null);
                                             }}
                                         >
-                                            <div className="mb-2">
-                                                <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
-                                                <p className="text-sm font-bold text-foreground line-clamp-2">
-                                                    {pkg.count}
-                                                </p>
-                                            </div>
-                                            <div className="pt-2 border-t border-border/50">
-                                                <p className="text-lg font-bold text-primary">
-                                                    ฿ {pkg.price.toFixed(2)}
-                                                </p>
+                                            <Card
+                                                className="p-3 h-full transition-all duration-300 hover:glow-primary border-2 rounded-lg"
+                                                style={{
+                                                    background: "rgba(100, 50, 255, 0.1)",
+                                                    borderColor:
+                                                        selectedPackage?.id === pkg.id
+                                                            ? "hsl(var(--primary))"
+                                                            : "rgba(100, 50, 255, 0.3)",
+                                                    backgroundColor:
+                                                        selectedPackage?.id === pkg.id
+                                                            ? "rgba(100, 50, 255, 0.2)"
+                                                            : "rgba(100, 50, 255, 0.1)",
+                                                }}
+                                            >
+                                                <div className="mb-2">
+                                                    <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
+                                                    <p className="text-sm font-bold text-foreground line-clamp-2">
+                                                        {pkg.count}
+                                                    </p>
+                                                </div>
+                                                <div className="pt-2 border-t border-border/50">
+                                                    <p className="text-lg font-bold text-primary">
+                                                        ฿ {pkg.price.toFixed(2)}
+                                                    </p>
                                             </div>
                                         </Card>
                                     </div>
                                 ))}
-                            </div>
+                                </div>
+                            ) : (
+                                <p className="text-muted-foreground text-sm">{t.noPackages || "No packages available"}</p>
+                            )}
                         </Card>
                     </div>
 
@@ -491,12 +436,12 @@ export default function GameTopupPage() {
                     <div className="lg:col-span-1">
                         <Card className="glass-card p-6 sticky top-24">
                             <div className="mb-4 pb-4 border-b border-border/50">
-                                <p className="text-xs text-muted-foreground">ประเภทการสั่ง</p>
+                                <p className="text-xs text-muted-foreground">{t.orderType}</p>
                                 <p className="text-sm font-semibold">
                                     {isLoggedIn ? (
-                                        <span className="text-green-500">✓ เข้าสู่ระบบแล้ว</span>
+                                        <span className="text-green-500">{t.alreadyLoggedIn}</span>
                                     ) : (
-                                        <span className="text-amber-500">ซื้อโดยไม่เข้าสู่ระบบ</span>
+                                        <span className="text-amber-500">{t.buyWithoutLogin}</span>
                                     )}
                                 </p>
                                 {!isLoggedIn && user && (
@@ -509,18 +454,18 @@ export default function GameTopupPage() {
                                         }}
                                         className="w-full mt-2 text-xs"
                                     >
-                                        เปลี่ยนไปรูปแบบสมาชิก
+                                        {t.switchToMember}
                                     </Button>
                                 )}
                             </div>
 
                             {/* Coupon Section */}
                             <div className="mb-6 pb-6 border-b border-border/50">
-                                <p className="text-sm font-semibold mb-3">คูปองส่วนลด</p>
+                                <p className="text-sm font-semibold mb-3">{t.discountCoupon}</p>
                                 <div className="flex gap-2">
                                     <Input
                                         type="text"
-                                        placeholder="ป้อนรหัสคูปอง"
+                                        placeholder={t.enterCouponCode}
                                         value={couponCode}
                                         onChange={(e) => setCouponCode(e.target.value)}
                                         className="glass-input text-sm"
@@ -531,15 +476,15 @@ export default function GameTopupPage() {
                                         disabled={submitting || !couponCode.trim()}
                                         className="px-4 bg-primary hover:bg-primary/90 text-sm"
                                     >
-                                        ใช้
+                                        {t.useCoupon}
                                     </Button>
                                 </div>
                                 {appliedCoupon && (
                                     <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded-md">
-                                        <p className="text-xs text-green-500">✓ ใช้คูปอง {appliedCoupon.code} ประหยัด {appliedCoupon.discount}%</p>
+                                        <p className="text-xs text-green-500">{`✓ ใช้คูปอง ${appliedCoupon.code} ประหยัด ${appliedCoupon.discount}%`}</p>
                                     </div>
                                 )}
-                                <p className="text-xs text-muted-foreground mt-2">ลองใช้: SAVE10, SAVE20, WELCOME</p>
+                                <p className="text-xs text-muted-foreground mt-2">{t.tryCoupons}</p>
                             </div>
 
                             <h2 className="text-lg font-bold mb-4">
@@ -547,27 +492,27 @@ export default function GameTopupPage() {
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                         3
                                     </div>
-                                    สรุปการสั่ง
+                                    {t.orderSummary}
                                 </div>
                             </h2>
                             <div className="bg-primary/10 rounded-lg p-4 mb-6">
-                                <p className="text-xs text-muted-foreground mb-1">แพคเกจที่เลือก</p>
+                                <p className="text-xs text-muted-foreground mb-1">{t.selectedPackage}</p>
                                 <p className="font-bold text-foreground">
-                                    {selectedPackage ? selectedPackage.count : "ยังไม่มีการเลือก"}
+                                    {selectedPackage ? selectedPackage.count : t.noSelection}
                                 </p>
                                 <div className="space-y-2 mt-4 pt-4 border-t border-primary/20">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">ราคา:</span>
+                                        <span className="text-muted-foreground">{t.priceLabel}</span>
                                         <span className="font-semibold">฿ {selectedPackage ? selectedPackage.price.toFixed(2) : "0.00"}</span>
                                     </div>
                                     {appliedCoupon && selectedPackage && (
                                         <div className="flex justify-between text-sm text-green-500">
-                                            <span>ส่วนลด ({appliedCoupon.discount}%):</span>
+                                            <span>{`ส่วนลด (${appliedCoupon.discount}%):`}</span>
                                             <span>-฿ {(selectedPackage.price * appliedCoupon.discount / 100).toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-primary/20">
-                                        <span>รวม:</span>
+                                        <span>{t.totalLabel}</span>
                                         <span className="text-primary">
                                             ฿ {selectedPackage ? (selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
                                         </span>
@@ -581,7 +526,7 @@ export default function GameTopupPage() {
                                 {!isLoggedIn && (
                                     <div>
                                         <label className="block text-sm font-medium mb-2">
-                                            อีเมลสำหรับใบเสร็จ <span className="text-red-500">*</span>
+                                            {t.emailForReceipt} <span className="text-red-500">*</span>
                                         </label>
                                         <Input
                                             type="email"
@@ -595,7 +540,7 @@ export default function GameTopupPage() {
                                             disabled={submitting}
                                         />
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            ใบเสร็จจะถูกส่งไปที่อีเมลนี้
+                                            {t.receiptNote}
                                         </p>
                                     </div>
                                 )}
@@ -610,18 +555,18 @@ export default function GameTopupPage() {
                                 {submitting ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                                        กำลังประมวลผล...
+                                        {t.processing}
                                     </>
                                 ) : (
                                     <>
-                                        สั่ง
+                                        {t.orderButton}
                                         <ShoppingCart className="w-5 h-5 ml-2" />
                                     </>
                                 )}
                             </Button>
 
                             <p className="text-xs text-center text-muted-foreground mt-4">
-                                คลิกเลือกแพคเกจเพื่อเริ่มสั่ง
+                                {t.selectPackageHint}
                             </p>
                         </Card>
                     </div>
