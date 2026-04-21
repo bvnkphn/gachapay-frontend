@@ -18,34 +18,27 @@ const PAYMENT_METHODS = [
     { id: "truemoney", name: "TrueMoney Wallet", descKey: "truemoneyDesc", icon: "TW", color: "#f97316" },
 ];
 
-const MOCK_TOPUP_HISTORY = [
-    { id: 1, txId: "TP-20240324-001", date: "24 มี.ค. 2024", time: "10:20 น.", method: "PromptPay", methodColor: "#1a56db", amount: 500, status: "success" },
-    { id: 2, txId: "TP-20240322-042", date: "22 มี.ค. 2024", time: "09:15 น.", method: "TrueMoney", methodColor: "#f97316", amount: 100, status: "success" },
-    { id: 3, txId: "TP-20240320-089", date: "20 มี.ค. 2024", time: "15:45 น.", method: "PromptPay", methodColor: "#1a56db", amount: 3000, status: "failed" },
-    { id: 4, txId: "TP-20240315-012", date: "15 มี.ค. 2024", time: "10:04 น.", method: "PromptPay", methodColor: "#1a56db", amount: 2500, status: "success" },
-    { id: 5, txId: "TP-20240310-055", date: "10 มี.ค. 2024", time: "14:30 น.", method: "TrueMoney", methodColor: "#f97316", amount: 200, status: "success" },
-    { id: 6, txId: "TP-20240305-033", date: "5 มี.ค. 2024", time: "08:10 น.", method: "PromptPay", methodColor: "#1a56db", amount: 1000, status: "failed" },
-];
-
 const PAGE_SIZE = 4;
 const FEE = 0.0;
 
 type PayStep = "qr" | "processing" | "success" | "failed";
 
 function PaymentFlowModal({
-    method, amount, onClose, onRetry, router, t,
+    method, amount, referenceId, onClose, onRetry, onSuccess, router, t,
 }: {
     method: typeof PAYMENT_METHODS[0] & { desc: string };
     amount: number;
+    referenceId?: string;
     onClose: () => void;
     onRetry: () => void;
+    onSuccess?: () => void;
     router: ReturnType<typeof useRouter>;
     t: ReturnType<typeof useLanguage>["t"];
 }) {
     const [step, setStep] = useState<PayStep>("qr");
     const [countdown, setCountdown] = useState(109);
     const [copied, setCopied] = useState(false);
-    const txId = "1159351574";
+    const txId = referenceId ?? "1159351574";
     const dateStr = new Date().toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "numeric" });
     const timeStr = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 
@@ -58,8 +51,14 @@ function PaymentFlowModal({
 
     useEffect(() => {
         if (step !== "processing") return;
-        const t = setTimeout(() => {
-            setStep(Math.random() > 0.4 ? "success" : "failed");
+        const t = setTimeout(async () => {
+            try {
+                await api.simulateTopupComplete(txId);
+                setStep("success");
+                onSuccess?.();
+            } catch {
+                setStep("failed");
+            }
         }, 3000);
         return () => clearTimeout(t);
     }, [step]);
@@ -152,6 +151,15 @@ function PaymentFlowModal({
                         {t.qrPaymentProblem}{" "}
                         <button className="text-primary hover:underline">{t.qrContactSupport}</button>
                     </p>
+                    <button
+                        onClick={async () => {
+                            try { await api.simulateTopupCancel(txId); } catch { }
+                            setStep("failed");
+                        }}
+                        className="mt-2 text-[11px] text-red-400/70 hover:text-red-400 transition-colors"
+                    >
+                        ยกเลิกการชำระเงิน
+                    </button>
                     <DevNav />
                 </div>
             </div>
@@ -281,33 +289,118 @@ function PaymentFlowModal({
 }
 
 
+function ReceiptModal({ tx, onClose }: { tx: any; onClose: () => void }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = () => {
+        navigator.clipboard.writeText(tx.reference_id);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+
+    const statusColor = tx.status === "completed" ? "text-green-400" :
+        tx.status === "pending" ? "text-yellow-400" :
+            tx.status === "expired" ? "text-gray-400" : "text-red-400";
+    const statusLabel = tx.status === "completed" ? "สำเร็จ" :
+        tx.status === "pending" ? "รอดำเนินการ" :
+            tx.status === "expired" ? "หมดอายุ" : "ยกเลิก";
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+            <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 overflow-hidden">
+                {/* Status bar */}
+                <div className={`h-1 w-full ${tx.status === "completed" ? "bg-green-400" : tx.status === "pending" ? "bg-yellow-400" : "bg-red-500"}`} />
+
+                <div className="p-6">
+                    {/* Icon + title */}
+                    <div className="flex flex-col items-center text-center mb-6">
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${tx.status === "completed" ? "bg-green-500/20" :
+                            tx.status === "pending" ? "bg-yellow-500/20" : "bg-red-500/20"
+                            }`}>
+                            {tx.status === "completed"
+                                ? <Check className="w-7 h-7 text-green-400" />
+                                : tx.status === "pending"
+                                    ? <AlertTriangle className="w-7 h-7 text-yellow-400" />
+                                    : <X className="w-7 h-7 text-red-400" />
+                            }
+                        </div>
+                        <p className={`font-bold text-base ${statusColor}`}>
+                            {tx.status === "completed" ? "ชำระเงินสำเร็จ" :
+                                tx.status === "pending" ? "รอดำเนินการ" : "รายการไม่สำเร็จ"}
+                        </p>
+                    </div>
+
+                    {/* Details */}
+                    <div className="space-y-3 text-sm bg-muted/20 rounded-xl p-4 mb-5">
+                        {[
+                            ["เลขที่อ้างอิง", tx.reference_id],
+                            ["ช่องทาง", tx.method?.name ?? "-"],
+                            ["จำนวนเงิน", `฿${parseFloat(tx.amount).toFixed(2)}`],
+                            ["วันที่", new Date(tx.created_at).toLocaleDateString("th-TH")],
+                            ["เวลา", `${new Date(tx.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.`],
+                            ["สถานะ", statusLabel],
+                        ].map(([k, v]) => (
+                            <div key={k} className="flex justify-between items-center">
+                                <span className="text-muted-foreground text-xs">{k}</span>
+                                <span className={`font-semibold text-xs ${k === "สถานะ" ? statusColor : ""}`}>{v}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Copy button */}
+                    <button
+                        onClick={handleCopy}
+                        className="w-full py-2.5 rounded-xl border border-border/50 text-xs font-semibold flex items-center justify-center gap-2 hover:bg-muted transition-colors mb-3"
+                    >
+                        {copied ? <Check className="w-3.5 h-3.5 text-green-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        {copied ? "คัดลอกแล้ว" : "คัดลอกเลขที่อ้างอิง"}
+                    </button>
+
+                    <button onClick={onClose} className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-semibold transition-colors">
+                        ปิด
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeof useLanguage>["t"] }) {
-    const [filter, setFilter] = useState<"all" | "success" | "pending" | "failed">("all");
+    const [filter, setFilter] = useState<"all" | "completed" | "pending" | "failed">("all");
     const [search, setSearch] = useState("");
     const [page, setPage] = useState(1);
+    const [data, setData] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
+    const [loading, setLoading] = useState(false);
+    const [selectedTx, setSelectedTx] = useState<any>(null);
+
+    useEffect(() => {
+        setLoading(true);
+        const status = filter === "all" ? undefined : filter;
+        api.getTopupTransactions({ status, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
+            .then((d) => setData({ items: d?.items ?? [], total: d?.total ?? 0 }))
+            .finally(() => setLoading(false));
+    }, [filter, page]);
 
     const filtered = useMemo(() => {
-        return MOCK_TOPUP_HISTORY.filter(tx => {
-            const matchFilter = filter === "all" || tx.status === filter;
-            const matchSearch = search === "" ||
-                tx.txId.toLowerCase().includes(search.toLowerCase()) ||
-                tx.method.toLowerCase().includes(search.toLowerCase());
-            return matchFilter && matchSearch;
-        });
-    }, [filter, search]);
+        if (!search) return data.items;
+        return data.items.filter(tx =>
+            tx.reference_id?.toLowerCase().includes(search.toLowerCase()) ||
+            tx.method?.name?.toLowerCase().includes(search.toLowerCase())
+        );
+    }, [data.items, search]);
 
-    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const totalPages = Math.ceil(data.total / PAGE_SIZE);
 
     const tabs = [
         { key: "all", label: "ทั้งหมด" },
-        { key: "success", label: "สำเร็จ" },
+        { key: "completed", label: "สำเร็จ" },
         { key: "pending", label: "รอดำเนินการ" },
         { key: "failed", label: "ยกเลิก" },
     ] as const;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            {selectedTx && <ReceiptModal tx={selectedTx} onClose={() => setSelectedTx(null)} />}
             <div className="bg-background rounded-2xl w-full max-w-2xl shadow-2xl border border-border/40 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-start justify-between p-6 border-b border-border/30">
@@ -363,37 +456,45 @@ function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeo
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-border/20">
-                            {paginated.length === 0 ? (
+                            {loading ? (
+                                <tr><td colSpan={6} className="py-8 text-center text-xs text-muted-foreground">กำลังโหลด...</td></tr>
+                            ) : filtered.length === 0 ? (
                                 <tr><td colSpan={6} className="py-8 text-center text-xs text-muted-foreground">ไม่พบรายการ</td></tr>
-                            ) : paginated.map(tx => (
-                                <tr key={tx.id}>
+                            ) : filtered.map((tx, i) => (
+                                <tr key={i}>
                                     <td className="py-3">
-                                        <p className="font-medium text-xs">{tx.date}</p>
-                                        <p className="text-[11px] text-muted-foreground">{tx.time}</p>
+                                        <p className="font-medium text-xs">{new Date(tx.created_at).toLocaleDateString('th-TH')}</p>
+                                        <p className="text-[11px] text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
                                     </td>
-                                    <td className="py-3 text-xs text-muted-foreground">{tx.txId}</td>
+                                    <td className="py-3 text-xs text-muted-foreground">{tx.reference_id}</td>
                                     <td className="py-3">
                                         <span className="flex items-center gap-1.5 text-xs">
                                             <span className="w-4 h-4 rounded text-[9px] font-bold text-white flex items-center justify-center shrink-0"
-                                                style={{ background: tx.methodColor }}>
-                                                {tx.method === "PromptPay" ? "PP" : "TW"}
+                                                style={{ background: tx.method?.color ?? '#888' }}>
+                                                {tx.method?.icon ?? '?'}
                                             </span>
-                                            {tx.method}
+                                            {tx.method?.name ?? '-'}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-right font-semibold text-xs">฿{tx.amount.toLocaleString()}.00</td>
+                                    <td className="py-3 text-right font-semibold text-xs">฿{parseFloat(tx.amount).toFixed(2)}</td>
                                     <td className="py-3 text-right">
                                         <span className={cn(
                                             "px-2 py-0.5 rounded-full text-[11px] font-semibold",
-                                            tx.status === "success" ? "bg-green-500/20 text-green-400" :
+                                            tx.status === "completed" ? "bg-green-500/20 text-green-400" :
                                                 tx.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
-                                                    "bg-red-500/20 text-red-400"
+                                                    tx.status === "expired" ? "bg-gray-500/20 text-gray-400" :
+                                                        "bg-red-500/20 text-red-400"
                                         )}>
-                                            {tx.status === "success" ? "สำเร็จ" : tx.status === "pending" ? "รอดำเนินการ" : "ยกเลิก"}
+                                            {tx.status === "completed" ? "สำเร็จ" :
+                                                tx.status === "pending" ? "รอดำเนินการ" :
+                                                    tx.status === "expired" ? "หมดอายุ" : "ยกเลิก"}
                                         </span>
                                     </td>
                                     <td className="py-3 text-right">
-                                        <button className="p-1 rounded hover:bg-muted transition-colors">
+                                        <button
+                                            onClick={() => setSelectedTx(tx)}
+                                            className="p-1 rounded hover:bg-muted transition-colors"
+                                        >
                                             <FileText className="w-3.5 h-3.5 text-primary" />
                                         </button>
                                     </td>
@@ -406,7 +507,7 @@ function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeo
                 {/* Pagination */}
                 <div className="flex items-center justify-between px-6 py-4 border-t border-border/30">
                     <p className="text-xs text-muted-foreground">
-                        แสดง {Math.min((page - 1) * PAGE_SIZE + 1, filtered.length)}–{Math.min(page * PAGE_SIZE, filtered.length)} จากทั้งหมด {filtered.length} รายการ
+                        แสดง {data.total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, data.total)} จากทั้งหมด {data.total} รายการ
                     </p>
                     <div className="flex items-center gap-1.5">
                         <button
@@ -449,31 +550,69 @@ export default function BalancePage() {
     const { open } = useSidebar();
 
     const [walletBalance, setWalletBalance] = useState<number>(0);
+    const [methods, setMethods] = useState<any[]>([]);
     const [selectedMethod, setSelectedMethod] = useState("promptpay");
     const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
     const [customAmount, setCustomAmount] = useState("");
     const [showHistory, setShowHistory] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
+    const [pendingTx, setPendingTx] = useState<any>(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [txHistory, setTxHistory] = useState<any[]>([]);
+
+    const refreshData = useCallback(() => {
+        if (!user) return;
+        api.getWalletBalance().then((d) => setWalletBalance(parseFloat(d?.amount ?? "0")));
+        api.getTopupTransactions({ limit: 5 }).then((d) => setTxHistory(d?.items ?? []));
+    }, [user]);
 
     useEffect(() => {
         if (!user) return;
-        api.getWalletBalance().then((data) => {
-            setWalletBalance(parseFloat(data?.amount ?? "0"));
-        });
+        Promise.all([
+            api.getWalletBalance().then((d) => setWalletBalance(parseFloat(d?.amount ?? "0"))),
+            api.getTopupMethods().then((d) => {
+                setMethods(d ?? []);
+                if (d?.length) setSelectedMethod(d[0].code);
+            }),
+            api.getTopupTransactions({ limit: 5 }).then((d) => setTxHistory(d?.items ?? [])),
+            // restore pending tx if exists
+            api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
+                const pending = d?.items?.[0];
+                if (pending) setPendingTx({ reference_id: pending.reference_id, amount: pending.amount });
+            }),
+        ]);
     }, [user]);
 
     const topupAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) || 0 : 0);
     const total = topupAmount + FEE;
 
+    const handleConfirmTopup = async () => {
+        if (topupAmount < 20) return;
+        setSubmitting(true);
+        try {
+            const tx = await api.createTopupIntent({ amount: total, methodCode: selectedMethod });
+            setPendingTx(tx);
+            setShowPayment(true);
+        } catch (e: any) {
+            alert(e.message ?? 'เกิดข้อผิดพลาด');
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const activeMethod = methods.find(m => m.code === selectedMethod) ?? PAYMENT_METHODS.find(m => m.id === selectedMethod);
+
     return (
         <div className="min-h-screen pt-16 pb-24">
             {showHistory && <HistoryModal onClose={() => setShowHistory(false)} t={t} />}
-            {showPayment && (
+            {showPayment && activeMethod && (
                 <PaymentFlowModal
-                    method={{ ...PAYMENT_METHODS.find(m => m.id === selectedMethod)!, desc: selectedMethod === "promptpay" ? t.promptpayDesc : t.truemoneyDesc }}
+                    method={{ ...activeMethod, id: activeMethod.code, desc: activeMethod.code === "promptpay" ? t.promptpayDesc : t.truemoneyDesc }}
                     amount={total}
+                    referenceId={pendingTx?.reference_id}
                     onClose={() => setShowPayment(false)}
-                    onRetry={() => setShowPayment(true)}
+                    onRetry={handleConfirmTopup}
+                    onSuccess={refreshData}
                     router={router}
                     t={t}
                 />
@@ -491,7 +630,7 @@ export default function BalancePage() {
                     </div>
 
                     {/* Balance Banner */}
-                    <div className="rounded-2xl p-6 mb-8 flex items-center justify-between text-white"
+                    <div className="rounded-2xl p-6 mb-4 flex items-center justify-between text-white"
                         style={{ background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)" }}>
                         <div>
                             <p className="text-xs font-semibold opacity-80 tracking-widest uppercase mb-1">{t.availableBalance}</p>
@@ -502,6 +641,39 @@ export default function BalancePage() {
                             <Wallet className="w-7 h-7 text-white" />
                         </div>
                     </div>
+
+                    {/* Pending transaction resume banner */}
+                    {pendingTx && !showPayment && (
+                        <div className="mb-6 rounded-2xl border border-yellow-500/40 bg-yellow-500/10 p-4 flex items-center justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                                <AlertTriangle className="w-5 h-5 text-yellow-400 shrink-0" />
+                                <div>
+                                    <p className="text-sm font-semibold text-yellow-400">มีรายการรอชำระเงินอยู่</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        {pendingTx.reference_id} · ฿{parseFloat(pendingTx.amount).toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                                <button
+                                    onClick={() => setShowPayment(true)}
+                                    className="px-4 py-2 rounded-xl bg-yellow-500 hover:bg-yellow-400 text-black text-xs font-bold transition-colors"
+                                >
+                                    ดำเนินการต่อ
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        try { await api.simulateTopupCancel(pendingTx.reference_id); } catch { }
+                                        setPendingTx(null);
+                                        refreshData();
+                                    }}
+                                    className="px-4 py-2 rounded-xl border border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-colors"
+                                >
+                                    ยกเลิก
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Top-up Form + Summary */}
                     <h2 className="text-base font-bold mb-4">{t.topupProcess}</h2>
@@ -517,13 +689,13 @@ export default function BalancePage() {
                                     {t.selectPaymentMethod}
                                 </p>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {PAYMENT_METHODS.map(m => (
+                                    {(methods.length ? methods : PAYMENT_METHODS.map(m => ({ ...m, code: m.id }))).map(m => (
                                         <button
-                                            key={m.id}
-                                            onClick={() => setSelectedMethod(m.id)}
+                                            key={m.code ?? m.id}
+                                            onClick={() => setSelectedMethod(m.code ?? m.id)}
                                             className={cn(
                                                 "flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left",
-                                                selectedMethod === m.id
+                                                selectedMethod === (m.code ?? m.id)
                                                     ? "border-primary bg-primary/10"
                                                     : "border-border/40 hover:border-border"
                                             )}
@@ -602,8 +774,12 @@ export default function BalancePage() {
                                         <span className="text-primary">฿{total.toFixed(2)}</span>
                                     </div>
                                 </div>
-                                <Button className="w-full font-bold mb-4" disabled={topupAmount <= 0} onClick={() => setShowPayment(true)}>
-                                    {t.confirmTopup}
+                                <Button
+                                    className="w-full font-bold mb-4"
+                                    disabled={topupAmount < 20 || submitting}
+                                    onClick={handleConfirmTopup}
+                                >
+                                    {submitting ? "กำลังสร้างรายการ..." : t.confirmTopup}
                                 </Button>
                                 <div className="flex gap-2 p-3 rounded-xl bg-primary/10 text-xs text-muted-foreground">
                                     <Info className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -627,28 +803,35 @@ export default function BalancePage() {
                                 <thead>
                                     <tr className="text-xs text-muted-foreground border-b border-border/30">
                                         <th className="text-left pb-3 font-medium">{t.dateTime}</th>
+                                        <th className="text-left pb-3 font-medium">เลขที่อ้างอิง</th>
                                         <th className="text-left pb-3 font-medium">{t.paymentMethodLabel}</th>
                                         <th className="text-right pb-3 font-medium">{t.topupAmountLabel}</th>
                                         <th className="text-right pb-3 font-medium">{t.statusLabel}</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/20">
-                                    {MOCK_TOPUP_HISTORY.map(tx => (
-                                        <tr key={tx.id}>
+                                    {txHistory.length === 0 ? (
+                                        <tr><td colSpan={5} className="py-6 text-center text-xs text-muted-foreground">ยังไม่มีประวัติการเติมเงิน</td></tr>
+                                    ) : txHistory.map((tx, i) => (
+                                        <tr key={i}>
                                             <td className="py-3">
-                                                <p className="font-medium">{tx.date}</p>
-                                                <p className="text-xs text-muted-foreground">{tx.time}</p>
+                                                <p className="font-medium">{new Date(tx.created_at).toLocaleDateString('th-TH')}</p>
+                                                <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</p>
                                             </td>
-                                            <td className="py-3 text-muted-foreground">{tx.method}</td>
-                                            <td className="py-3 text-right font-semibold">฿{tx.amount.toLocaleString()}.00</td>
+                                            <td className="py-3 text-xs text-muted-foreground">{tx.reference_id}</td>
+                                            <td className="py-3 text-muted-foreground">{tx.method?.name ?? '-'}</td>
+                                            <td className="py-3 text-right font-semibold">฿{parseFloat(tx.amount).toFixed(2)}</td>
                                             <td className="py-3 text-right">
                                                 <span className={cn(
                                                     "px-2.5 py-1 rounded-full text-[11px] font-semibold",
-                                                    tx.status === "success"
-                                                        ? "bg-green-500/20 text-green-400"
-                                                        : "bg-red-500/20 text-red-400"
+                                                    tx.status === "completed" ? "bg-green-500/20 text-green-400" :
+                                                        tx.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                                                            tx.status === "expired" ? "bg-gray-500/20 text-gray-400" :
+                                                                "bg-red-500/20 text-red-400"
                                                 )}>
-                                                    {tx.status === "success" ? t.statusSuccess : t.statusFailed}
+                                                    {tx.status === "completed" ? t.statusSuccess :
+                                                        tx.status === "pending" ? "รอชำระ" :
+                                                            tx.status === "expired" ? "หมดอายุ" : t.statusFailed}
                                                 </span>
                                             </td>
                                         </tr>

@@ -93,6 +93,7 @@ export const api = {
 
     // Orders
     getOrders: () => apiRequest("/orders"),
+    getOrder: (id: string) => apiRequest(`/orders/${id}`),
     createOrder: (data: any) =>
         apiRequest("/orders", {
             method: "POST",
@@ -104,4 +105,20 @@ export const api = {
     getLoyalty: () => apiRequest("/users/me/loyalty"),
     getWalletBalance: () => apiRequest("/wallets/me/balance"),
     getRecentOrders: () => apiRequest("/orders/me/recent"),
+
+    // Topup
+    getTopupMethods: () => apiRequest("/topup/methods"),
+    getTopupTransactions: (params?: { status?: string; limit?: number; offset?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.status) q.set("status", params.status);
+        if (params?.limit !== undefined) q.set("limit", String(params.limit));
+        if (params?.offset !== undefined) q.set("offset", String(params.offset));
+        return apiRequest(`/topup/transactions?${q.toString()}`);
+    },
+    createTopupIntent: (data: { amount: number; methodCode: string }) =>
+        apiRequest("/topup/create-intent", { method: "POST", body: JSON.stringify(data) }),
+    simulateTopupComplete: (referenceId: string) =>
+        apiRequest(`/topup/${referenceId}/complete`, { method: "PATCH" }),
+    simulateTopupCancel: (referenceId: string) =>
+        apiRequest(`/topup/${referenceId}/cancel`, { method: "PATCH" }),
 };

@@ -1,39 +1,43 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
-import { ChevronRight, Search } from "lucide-react";
+import { api } from "@/lib/api";
+import { ChevronRight, Search, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const MOCK_ORDERS = [
-    { id: "o-y5uxpey", date: "12/3/2569", time: "17:49", name: "Top Up Garena ROV 11 coupons Thailand", method: "พร้อมเพย์ QR", amount: 10.72, status: "failed" },
-    { id: "o-y5uxrf6o", date: "12/3/2569", time: "17:27", name: "Top Up Garena ROV 11 coupons Thailand", method: "พร้อมเพย์ QR", amount: 10.72, status: "success" },
-    { id: "o-y5tzuey", date: "11/3/2569", time: "13:27", name: "Top Up Garena ROV 11 coupons Thailand", method: "TrueMoney Wallet", amount: 10.72, status: "failed" },
-    { id: "o-y5tzjjy", date: "11/3/2569", time: "13:23", name: "Top Up Garena ROV 11 coupons Thailand", method: "พร้อมเพย์ QR", amount: 10.72, status: "failed" },
-    { id: "o-y4abcde", date: "5/3/2569", time: "10:15", name: "Top Up PUBG Mobile 60 UC", method: "TrueMoney Wallet", amount: 29.00, status: "success" },
-    { id: "o-y4xyzab", date: "1/3/2569", time: "09:00", name: "Top Up Free Fire 100 Diamonds", method: "พร้อมเพย์ QR", amount: 15.00, status: "success" },
-];
-
-const STATUS_MAP = {
-    success: { label: "จัดการคำสั่งซื้อแล้ว", color: "text-green-400" },
-    failed: { label: "ชำระเงินไม่ครบ", color: "text-red-400" },
-    pending: { label: "รอดำเนินการ", color: "text-yellow-400" },
+const STATUS_STYLE: Record<string, { label: string; color: string }> = {
+    COMPLETED: { label: "จัดการคำสั่งซื้อแล้ว", color: "text-green-400" },
+    PARTIAL_PAYMENT: { label: "ชำระเงินไม่ครบ", color: "text-red-400" },
+    PENDING: { label: "รอดำเนินการ", color: "text-yellow-400" },
+    CANCELLED: { label: "ยกเลิกรายการ", color: "text-gray-400" },
 };
 
 export default function HistoryPage() {
     const router = useRouter();
+    const { user } = useAuth();
     const { t } = useLanguage();
     const { open } = useSidebar();
+
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
-    const filtered = useMemo(() =>
-        MOCK_ORDERS.filter(o =>
-            o.name.toLowerCase().includes(search.toLowerCase()) ||
-            o.id.toLowerCase().includes(search.toLowerCase()) ||
-            o.method.toLowerCase().includes(search.toLowerCase())
-        ), [search]);
+    useEffect(() => {
+        if (!user) return;
+        api.getOrders()
+            .then(setOrders)
+            .finally(() => setLoading(false));
+    }, [user]);
+
+    const filtered = orders.filter(o =>
+        o.package_name?.toLowerCase().includes(search.toLowerCase()) ||
+        o.order_id?.toLowerCase().includes(search.toLowerCase()) ||
+        o.game_name?.toLowerCase().includes(search.toLowerCase())
+    );
 
     return (
         <div className="min-h-screen pt-16 pb-24">
@@ -76,40 +80,47 @@ export default function HistoryPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/20">
-                                    {filtered.length === 0 ? (
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={7} className="py-12 text-center">
+                                                <Loader2 className="w-5 h-5 animate-spin mx-auto text-primary" />
+                                            </td>
+                                        </tr>
+                                    ) : filtered.length === 0 ? (
                                         <tr>
                                             <td colSpan={7} className="text-center py-12 text-muted-foreground text-sm">
                                                 ไม่พบรายการ
                                             </td>
                                         </tr>
                                     ) : filtered.map(order => {
-                                        const status = STATUS_MAP[order.status as keyof typeof STATUS_MAP];
+                                        const statusStyle = STATUS_STYLE[order.status_label] ?? { label: order.status_label, color: "text-muted-foreground" };
                                         return (
-                                            <tr key={order.id} className="hover:bg-muted/20 transition-colors">
+                                            <tr key={order.order_id} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-5 py-4 whitespace-nowrap">
-                                                    <p className="font-medium">{order.date}</p>
-                                                    <p className="text-xs text-muted-foreground">{order.time}</p>
+                                                    <p className="font-medium">{new Date(order.created_at).toLocaleDateString('th-TH')}</p>
+                                                    <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}</p>
                                                 </td>
                                                 <td className="px-5 py-4">
-                                                    <span className={cn("text-xs font-semibold", status.color)}>
-                                                        {status.label}
+                                                    <span className={cn("text-xs font-semibold", statusStyle.color)}>
+                                                        {statusStyle.label}
                                                     </span>
                                                 </td>
                                                 <td className="px-5 py-4 max-w-[200px]">
-                                                    <p className="truncate">{order.name}</p>
+                                                    <p className="truncate">{order.package_name}</p>
+                                                    <p className="text-xs text-muted-foreground truncate">{order.game_name}</p>
                                                 </td>
                                                 <td className="px-5 py-4 text-muted-foreground font-mono text-xs">
-                                                    {order.id}
+                                                    #{order.order_id}
                                                 </td>
                                                 <td className="px-5 py-4 text-muted-foreground">
-                                                    {order.method}
+                                                    {order.payment_method ?? '-'}
                                                 </td>
                                                 <td className="px-5 py-4 text-right font-semibold">
-                                                    ฿{order.amount.toFixed(2)}
+                                                    ฿{parseFloat(order.total_price).toFixed(2)}
                                                 </td>
                                                 <td className="px-5 py-4 text-right">
                                                     <button
-                                                        onClick={() => router.push(`/history/${order.id}`)}
+                                                        onClick={() => router.push(`/history/${order.order_id}`)}
                                                         className="text-xs text-primary hover:underline whitespace-nowrap"
                                                     >
                                                         {t.viewDetail}
