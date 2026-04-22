@@ -124,3 +124,86 @@ export const createOrderWithValidation = async (
         };
     }
 };
+
+/**
+ * Process wallet payment
+ * ประมวลผลการชำระเงินจากกระเป๋าเงิน Gacha
+ */
+export const processWalletPayment = async (
+    orderId: number,
+    amount: number
+) => {
+    try {
+        const response = await api.post('/payments/process-wallet-payment', {
+            orderId,
+            amount,
+            paymentMethod: 'gacha_wallet',
+        });
+        return response.data;
+    } catch (error) {
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : 'Wallet payment failed',
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
+        };
+    }
+};
+
+/**
+ * Generate QR Code for payment
+ * สร้าง QR Code สำหรับการชำระเงิน
+ */
+export const generateQRCode = async (
+    orderId: number,
+    amount: number,
+    method: 'promptpay' | 'truemoney'
+) => {
+    try {
+        const response = await api.post('/payments/generate-qr', {
+            orderId,
+            amount,
+            method,
+        });
+        return response.data;
+    } catch (error) {
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : 'Failed to generate QR code',
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
+        };
+    }
+};
+
+/**
+ * Check payment status
+ * ตรวจสอบสถานะการชำระเงิน
+ */
+export const checkPaymentStatus = async (orderId: number) => {
+    try {
+        const response = await api.get(`/payments/check-status?orderId=${orderId}`);
+        return response.data;
+    } catch (error) {
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : 'Failed to check payment status',
+            errors: [error instanceof Error ? error.message : 'Unknown error'],
+        };
+    }
+};
+
+/**
+ * Get wallet balance
+ * ดึงยอดเงินในกระเป๋า Gacha
+ */
+export const getWalletBalance = async () => {
+    try {
+        const response = await api.get('/wallets/me/balance');
+        return response.data;
+    } catch (error) {
+        return {
+            success: false,
+            message: error instanceof Error ? error.message : 'Failed to fetch wallet balance',
+            data: { balance: 0 },
+        };
+    }
+};
