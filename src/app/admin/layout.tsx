@@ -1,7 +1,9 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Link from "next/link";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import {
   LayoutDashboard, ShoppingCart, HeadphonesIcon,
   BarChart2, CreditCard, Settings, FileText,
@@ -31,6 +33,8 @@ const navSections = [
 
 function AdminSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { logout } = useAdminAuth();
 
   return (
     <aside className="flex flex-col h-full w-52 flex-shrink-0"
@@ -75,19 +79,52 @@ function AdminSidebar() {
         ))}
       </nav>
 
-      {/* Back to site */}
-      <div className="px-3 py-4" style={{ borderTop: "1px solid #1c2540" }}>
+      {/* Back to site + Logout */}
+      <div className="px-3 py-4 space-y-1" style={{ borderTop: "1px solid #1c2540" }}>
         <Link href="/"
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold"
           style={{ color: "#64748b" }}>
           ← กลับหน้าเว็บ
         </Link>
+        <button
+          onClick={() => { logout(); router.replace('/admin/login-admin'); }}
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 transition">
+          ✗ ออกจากระบบ
+        </button>
       </div>
     </aside>
   );
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { token } = useAdminAuth();
+
+  useEffect(() => {
+    // ถ้าไม่มี token และไม่ได้อยู่หน้า login-admin ให้ redirect ไป login
+    const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
+    if (!token && !isLoginPage) {
+      router.replace('/admin/login-admin');
+    }
+  }, [token, pathname]);
+
+  const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
+
+  // หน้า login ไม่ต้องแสดง sidebar
+  if (isLoginPage) {
+    return <>{children}</>;
+  }
+
+  // ยังไม่มี token แสดง loading แทน
+  if (!token) {
+    return (
+      <div className="min-h-screen bg-[#080c18] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden"
       style={{ background: "linear-gradient(160deg,#080c18 0%,#0a0e1e 60%,#060911 100%)" }}>
