@@ -99,15 +99,15 @@ function AdminSidebar() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token } = useAdminAuth();
+  const { token, _hydrated } = useAdminAuth();
 
   useEffect(() => {
-    // ถ้าไม่มี token และไม่ได้อยู่หน้า login-admin ให้ redirect ไป login
+    if (!_hydrated) return; // รอ zustand โหลดจาก localStorage ก่อน
     const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
     if (!token && !isLoginPage) {
       router.replace('/admin/login-admin');
     }
-  }, [token, pathname]);
+  }, [token, pathname, _hydrated]);
 
   const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
 
@@ -116,8 +116,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return <>{children}</>;
   }
 
-  // ยังไม่มี token แสดง loading แทน
-  if (!token) {
+  // รอ hydration หรือยังไม่มี token — แสดง loading
+  if (!_hydrated || !token) {
     return (
       <div className="min-h-screen bg-[#080c18] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />

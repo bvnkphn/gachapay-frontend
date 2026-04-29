@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import axios from "axios";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import {
   ArrowUpRight, ArrowDownRight, Bell, Search, ChevronDown,
   TrendingUp, Eye, MoreVertical, Wallet, ShoppingCart,
@@ -314,7 +316,7 @@ function OrderRow({o,t,noStatus}:{o:typeof ALL_ORDERS[0];t:typeof T["th"];noStat
 }
 
 // ── All Orders Modal ──────────────────────────────────────────────
-function AllOrdersModal({onClose,t}:{onClose:()=>void;t:typeof T["th"]}){
+function AllOrdersModal({onClose,t,orders}:{onClose:()=>void;t:typeof T["th"];orders:typeof ALL_ORDERS}){
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{background:"rgba(0,0,0,0.8)"}}>
@@ -334,7 +336,7 @@ function AllOrdersModal({onClose,t}:{onClose:()=>void;t:typeof T["th"]}){
           </button>
         </div>
         <div className="flex-1 overflow-y-auto">
-          {ALL_ORDERS.map((o,i)=><OrderRow key={i} o={o} t={t}/>)}
+          {orders.map((o,i)=><OrderRow key={i} o={o} t={t}/>)}
         </div>
       </div>
     </div>
@@ -347,19 +349,122 @@ export default function AdminDashboard(){
   const [lang,setLang]       = useState<"th"|"en">("th");
   const [period,setPeriod]   = useState<"3d"|"7d"|"30d"|"year">("7d");
   const [showAll,setShowAll] = useState(false);
+  const { token, admin } = useAdminAuth();
+
+  // ── Real data states ──────────────────────────────────────────
+  const [realOrders, setRealOrders] = useState<any[]>([]);
+  const [realGames,  setRealGames]  = useState<any[]>([]);
+  const [loading,    setLoading]    = useState(true);
+
+  const fetchData = useCallback(async () => {
+    if (!token) return;
+    try {
+      const headers = { Authorization: `Bearer ${token}` };
+      const api = process.env.NEXT_PUBLIC_API_URL;
+
+      const [ordersRes, gamesRes] = await Promise.all([
+        axios.get(`${api}/orders/admin/all`, { headers }),
+        axios.get(`${api}/games`, { headers }),
+      ]);
+
+      setRealOrders(ordersRes.data ?? []);
+      setRealGames(gamesRes.data ?? []);
+    } catch (e) {
+      console.error('Dashboard fetch error:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── Compute stats from real orders ────────────────────────────
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayOrders  = realOrders.filter(o => new Date(o.created_at) >= today);
+  const successOrders = realOrders.filter(o => o.status === 'completed');
+  const pendingOrders = realOrders.filter(o => o.status === 'pending');
+  const failedOrders  = realOrders.filter(o => o.status === 'failed');
+
+  const todayRevenue  = todayOrders.filter(o => o.status === 'completed')
+    .reduce((s, o) => s + (o.amount ?? 0), 0);
+  const successRate   = realOrders.length > 0
+    ? ((successOrders.length / realOrders.length) * 100).toFixed(1)
+    : '0.0';
+
+  // ── Compute chart data from real orders ───────────────────────
+  function buildChartData(days: number) {
+    const map: Record<string, number> = {};
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+      map[d.toDateString()] = 0;
+    }
+    realOrders.filter(o => o.status === 'completed').forEach(o => {
+      const d = new Date(o.created_at); d.setHours(0,0,0,0);
+      if (map[d.toDateString()] !== undefined) {
+        map[d.toDateString()] += o.amount ?? 0;
+      }
+    });
+    return Object.values(map);
+  }
+
+  // ── Compute top games from real orders ────────────────────────
+  const gameStats: Record<string, { revenue: number; orders: number }> = {};
+  realOrders.filter(o => o.status === 'completed').forEach(o => {
+    if (!gameStats[o.game]) gameStats[o.game] = { revenue: 0, orders: 0 };
+    gameStats[o.game].revenue += o.amount ?? 0;
+    gameStats[o.game].orders  += 1;
+  });
+  const computedTopGames = Object.entries(gameStats)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5)
+    .map(([name, stats]) => ({
+      name,
+      status: 'open',
+      revenue: stats.revenue,
+      stockPct: 85,
+      orders: stats.orders,
+      trend: 0,
+      trendUp: true,
+    }));
+
+  const displayOrders = realOrders.slice(0, 12).map((o) => ({
+    id: `ORD-${o.order_id}`,
+    uid: o.uid ?? '-',
+    game: o.game,
+    pkg: o.pkg,
+    method: o.method,
+    amount: o.amount,
+    status: (o.status === 'completed' ? 'success' : o.status === 'pending' ? 'pending' : o.status === 'processing' ? 'processing' : 'failed') as TxStatus,
+    min: Math.floor((Date.now() - new Date(o.created_at).getTime()) / 60000),
+  }));
+
+  const displayTopGames = computedTopGames.length > 0 ? computedTopGames : [];
+
+  const REAL_CHART_PERIODS = {
+    "3d":   { lbTH:["เมื่อวาน−2","เมื่อวาน","วันนี้"], lbEN:["2d ago","Yesterday","Today"], v: buildChartData(3) },
+    "7d":   { lbTH:["จ","อ","พ","พฤ","ศ","ส","อา"], lbEN:["Mon","Tue","Wed","Thu","Fri","Sat","Sun"], v: buildChartData(7) },
+    "30d":  { lbTH:Array.from({length:30},(_,i)=>`${i+1}`), lbEN:Array.from({length:30},(_,i)=>`${i+1}`), v: buildChartData(30) },
+    "year": { lbTH:["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."],
+              lbEN:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],
+              v: buildChartData(365) },
+  };
+
+  const displayChart = REAL_CHART_PERIODS;
 
   const t = T[lang];
-  const chart = CHART_PERIODS[period];
+  const chart = displayChart[period];
   const chartLabels = lang==="th" ? chart.lbTH : chart.lbEN;
   const now = new Date().toLocaleDateString("th-TH",{day:"numeric",month:"long",year:"numeric"});
 
   const statCards = [
-    { label:t.todaySales,  value:"฿146,280", chg:"+12.5%", up:true,  sub:t.fromYesterday, icon:Wallet,        accent:"#38bdf8" },
-    { label:t.totalOrders, value:"3,746",    chg:"+8.3%",  up:true,  sub:t.fromYesterday, icon:ShoppingCart,  accent:"#34d399" },
-    { label:t.newMembers,  value:"284",      chg:"+15.2%", up:true,  sub:t.fromYesterday, icon:Users,         accent:"#a78bfa" },
-    { label:t.successRate, value:"98.7%",    chg:"+0.5%",  up:true,  sub:t.fromYesterday, icon:Zap,           accent:"#34d399" },
-    { label:t.pendingTx,   value:"23",       chg:"+2.1%",  up:true,  sub:t.fromYesterday, icon:Clock,         accent:"#f59e0b" },
-    { label:t.failedTopup, value:"12",       chg:"-25%",   up:false, sub:t.fromYesterday, icon:AlertTriangle, accent:"#f87171" },
+    { label:t.todaySales,  value: `฿${fmt(Math.round(todayRevenue))}`, chg:"+12.5%", up:true,  sub:t.fromYesterday, icon:Wallet,        accent:"#38bdf8" },
+    { label:t.totalOrders, value: String(todayOrders.length),               chg:"+8.3%",  up:true,  sub:t.fromYesterday, icon:ShoppingCart,  accent:"#34d399" },
+    { label:t.newMembers,  value:"284",                                      chg:"+15.2%", up:true,  sub:t.fromYesterday, icon:Users,         accent:"#a78bfa" },
+    { label:t.successRate, value: `${successRate}%`,                         chg:"+0.5%",  up:true,  sub:t.fromYesterday, icon:Zap,           accent:"#34d399" },
+    { label:t.pendingTx,   value: String(pendingOrders.length),              chg:"+2.1%",  up:true,  sub:t.fromYesterday, icon:Clock,         accent:"#f59e0b" },
+    { label:t.failedTopup, value: String(failedOrders.length),               chg:"-25%",   up:false, sub:t.fromYesterday, icon:AlertTriangle, accent:"#f87171" },
   ];
 
   const quickActions = [
@@ -381,7 +486,7 @@ export default function AdminDashboard(){
   return (
     <div className="flex flex-col min-h-screen" style={{fontFamily:"'Noto Sans Thai',sans-serif",background:"#080a16"}}>
 
-      {showAll && <AllOrdersModal onClose={()=>setShowAll(false)} t={t}/>}
+      {showAll && <AllOrdersModal onClose={()=>setShowAll(false)} t={t} orders={displayOrders}/>}
 
       {/* ══ TOPBAR ══ */}
       <div className="flex items-center gap-3 px-4 py-2.5 flex-shrink-0"
@@ -514,7 +619,7 @@ export default function AdminDashboard(){
               </button>
             </div>
             <div>
-              {RECENT.map((o,i)=><OrderRow key={i} o={o} t={t}/>)}
+              {displayOrders.slice(0,6).map((o,i)=><OrderRow key={i} o={o} t={t}/>)}
             </div>
           </div>
 
@@ -526,7 +631,7 @@ export default function AdminDashboard(){
               <button className="text-xs font-semibold" style={{color:"#38bdf8"}}>{t.manageGame}</button>
             </div>
             <div>
-              {topGames.map((g,i)=>{
+              {displayTopGames.map((g,i)=>{
                 const logo=GAME_LOGOS[g.name];
                 const sColor=g.status==="open"?"#34d399":"#f87171";
                 const sBg=g.status==="open"?"rgba(52,211,153,0.12)":"rgba(248,113,113,0.12)";
@@ -534,7 +639,7 @@ export default function AdminDashboard(){
                 const barColor=stockColor(g.stockPct);
                 return (
                   <div key={i} className="flex items-center gap-4 px-5 py-3.5 hover:bg-white/[0.02] transition"
-                    style={{borderBottom:i<topGames.length-1?"1px solid #0d1525":"none"}}>
+                    style={{borderBottom:i<displayTopGames.length-1?"1px solid #0d1525":"none"}}>
                     {/* Logo — original flat style */}
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
                       style={{background: logo?.bg ?? "#1a1a2a"}}>

@@ -12,9 +12,11 @@ interface AdminUser {
 interface AdminAuthState {
   admin: AdminUser | null;
   token: string | null;
+  _hydrated: boolean;
   setAuth: (admin: AdminUser, token: string) => void;
   logout: () => void;
   isAuthenticated: () => boolean;
+  setHydrated: () => void;
 }
 
 const useAdminAuthStore = create<AdminAuthState>()(
@@ -22,12 +24,17 @@ const useAdminAuthStore = create<AdminAuthState>()(
     (set, get) => ({
       admin: null,
       token: null,
+      _hydrated: false,
       setAuth: (admin, token) => set({ admin, token }),
       logout: () => set({ admin: null, token: null }),
       isAuthenticated: () => !!get().token,
+      setHydrated: () => set({ _hydrated: true }),
     }),
     {
       name: "admin-auth-storage",
+      onRehydrateStorage: () => (state) => {
+        state?.setHydrated();
+      },
     }
   )
 );
