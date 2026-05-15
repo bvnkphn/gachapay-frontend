@@ -142,12 +142,25 @@ export default function GameTopupPage() {
             setSubmitting(true);
             setError(null);
 
-            // Create order via backend API
-            // Use slug for gameId and sku/id for packageId
+            // Extract UID from form data - find the field with highest priority/first required field
+            const uidValue = game.fields && game.fields.length > 0 
+                ? formData[game.fields[0].name] || formData.uid || formData.id
+                : "";
+
+            if (!uidValue) {
+                setError("Game UID is required");
+                setSubmitting(false);
+                return;
+            }
+
+            // Create order via backend API with correct structure
             const orderData = {
                 gameId: game.slug || String(game.id),
+                gameName: game.name,
                 packageId: selectedPackage.id,
-                userInput: formData,
+                packageName: selectedPackage.name,
+                packagePrice: selectedPackage.price,
+                uid: uidValue,
                 email: isLoggedIn ? user?.email : formData.email,
                 couponCode: appliedCoupon?.code,
             };
