@@ -15,6 +15,9 @@ const navItems = [
 export function BottomNav() {
     const pathname = usePathname();
 
+    // ซ่อน bottom nav ของ user เมื่ออยู่ในหน้า admin
+    if (pathname.startsWith("/admin")) return null;
+
     return (
         <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 md:hidden">
             <div className="flex items-center justify-around h-16">

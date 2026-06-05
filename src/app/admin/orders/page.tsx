@@ -6,34 +6,29 @@ import { useAdminAuth } from '@/hooks/use-admin-auth';
 import {
     Search, RefreshCw, Download, X, ChevronLeft, ChevronRight,
     RotateCcw, Pencil, CheckCircle, XCircle, Clock, AlertTriangle,
-    Package, Banknote, Filter,
+    Package, Banknote,
 } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 type OrderStatus = 'pending' | 'processing' | 'completed' | 'failed' | 'refunded' | 'cancelled';
-
 type AdminOrder = {
     order_id: string; uid: string; email: string;
     game: string; pkg: string; amount: number; discount: number;
     method: string; status: OrderStatus; coupon: string | null;
     created_at: string;
 };
-
 type Pagination = { page: number; limit: number; total: number; totalPages: number };
 
-// ─── Config ───────────────────────────────────────────────────────────────────
 const cardBg = { background: 'rgba(11,15,32,0.85)', border: '1px solid #1c2540' };
 
 const STATUS_CFG: Record<OrderStatus, { color: string; bg: string; border: string; label: string; icon: any }> = {
     pending:    { color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',  border: 'rgba(245,158,11,0.3)',  label: 'Pending',    icon: Clock         },
-    processing: { color: '#38bdf8', bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.3)',  label: 'Processing', icon: RefreshCw      },
+    processing: { color: '#38bdf8', bg: 'rgba(56,189,248,0.12)',  border: 'rgba(56,189,248,0.3)',  label: 'Processing', icon: RefreshCw     },
     completed:  { color: '#34d399', bg: 'rgba(52,211,153,0.12)',  border: 'rgba(52,211,153,0.3)',  label: 'Success',    icon: CheckCircle   },
     failed:     { color: '#f87171', bg: 'rgba(248,113,113,0.12)', border: 'rgba(248,113,113,0.3)', label: 'Failed',     icon: XCircle       },
     refunded:   { color: '#a78bfa', bg: 'rgba(167,139,250,0.12)', border: 'rgba(167,139,250,0.3)', label: 'Refunded',   icon: Banknote      },
     cancelled:  { color: '#64748b', bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.3)', label: 'Cancelled',  icon: XCircle       },
 };
 
-// สถานะที่ admin สามารถเปลี่ยนได้
 const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     pending:    ['completed', 'failed', 'cancelled'],
     processing: ['completed', 'failed'],
@@ -43,7 +38,7 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
     cancelled:  [],
 };
 
-const STATUS_TABS: { key: string; label: string }[] = [
+const STATUS_TABS = [
     { key: 'all',        label: 'ทั้งหมด' },
     { key: 'pending',    label: 'Pending' },
     { key: 'processing', label: 'Processing' },
@@ -58,20 +53,17 @@ function fmtDate(iso: string) {
     return new Date(iso).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: OrderStatus }) {
     const cfg = STATUS_CFG[status] ?? STATUS_CFG.cancelled;
     const Icon = cfg.icon;
     return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap"
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap"
             style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-            <Icon size={10} />
-            {cfg.label}
+            <Icon size={9} />{cfg.label}
         </span>
     );
 }
 
-// ─── Edit Status Modal ────────────────────────────────────────────────────────
 function EditStatusModal({ order, token, onClose, onSuccess }: {
     order: AdminOrder; token: string; onClose: () => void; onSuccess: () => void;
 }) {
@@ -90,9 +82,8 @@ function EditStatusModal({ order, token, onClose, onSuccess }: {
                 { headers: { Authorization: `Bearer ${token}` } },
             );
             onSuccess(); onClose();
-        } catch (e: any) {
-            setError(e?.response?.data?.message ?? 'เกิดข้อผิดพลาด');
-        } finally { setLoading(false); }
+        } catch (e: any) { setError(e?.response?.data?.message ?? 'เกิดข้อผิดพลาด'); }
+        finally { setLoading(false); }
     };
 
     return (
@@ -100,24 +91,17 @@ function EditStatusModal({ order, token, onClose, onSuccess }: {
             <div className="w-full max-w-sm rounded-2xl overflow-hidden" style={{ background: '#0d1420', border: '1px solid #1c2540' }}>
                 <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #1c2540' }}>
                     <p className="text-sm font-bold text-white">เปลี่ยนสถานะออเดอร์</p>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition" style={{ color: '#64748b' }}>
-                        <X size={16} />
-                    </button>
+                    <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color: '#64748b' }}><X size={16} /></button>
                 </div>
                 <div className="p-5 space-y-4">
                     <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid #1c2540' }}>
                         <p className="text-xs text-gray-400 mb-0.5">Order #{order.order_id}</p>
                         <p className="text-sm font-semibold text-white">{order.game} — {order.pkg}</p>
                         <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>UID: {order.uid}</p>
-                        <div className="mt-2">
-                            <StatusBadge status={order.status} />
-                        </div>
+                        <div className="mt-2"><StatusBadge status={order.status} /></div>
                     </div>
-
                     {allowed.length === 0 ? (
-                        <p className="text-xs text-center py-3" style={{ color: '#64748b' }}>
-                            สถานะนี้ไม่สามารถเปลี่ยนได้แล้ว
-                        </p>
+                        <p className="text-xs text-center py-3" style={{ color: '#64748b' }}>สถานะนี้ไม่สามารถเปลี่ยนได้แล้ว</p>
                     ) : (
                         <div>
                             <p className="text-xs text-gray-400 mb-2">เปลี่ยนเป็น</p>
@@ -141,18 +125,14 @@ function EditStatusModal({ order, token, onClose, onSuccess }: {
                             </div>
                         </div>
                     )}
-
                     {error && <p className="text-red-400 text-xs bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>}
-
                     {allowed.length > 0 && (
                         <div className="flex gap-2">
                             <button onClick={onClose}
-                                className="flex-1 py-2 rounded-xl text-sm font-semibold text-gray-400 transition"
-                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1c2540' }}>
-                                ยกเลิก
-                            </button>
+                                className="flex-1 py-2 rounded-xl text-sm font-semibold text-gray-400"
+                                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1c2540' }}>ยกเลิก</button>
                             <button onClick={handleSubmit} disabled={!selected || loading}
-                                className="flex-1 py-2 rounded-xl text-sm font-semibold text-white transition disabled:opacity-40"
+                                className="flex-1 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-40"
                                 style={{ background: 'linear-gradient(135deg,#38bdf8,#818cf8)' }}>
                                 {loading ? 'กำลังบันทึก...' : 'บันทึก'}
                             </button>
@@ -164,10 +144,8 @@ function EditStatusModal({ order, token, onClose, onSuccess }: {
     );
 }
 
-// ─── Order Detail Modal ───────────────────────────────────────────────────────
 function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
-    order: AdminOrder; token: string; onClose: () => void;
-    onEdit: () => void; onRetry: () => void;
+    order: AdminOrder; token: string; onClose: () => void; onEdit: () => void; onRetry: () => void;
 }) {
     const canRetry = ['failed', 'cancelled'].includes(order.status);
     return (
@@ -175,12 +153,9 @@ function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
             <div className="w-full max-w-md rounded-2xl overflow-hidden" style={{ background: '#0d1420', border: '1px solid #1c2540' }}>
                 <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #1c2540' }}>
                     <p className="text-sm font-bold text-white">รายละเอียดออเดอร์</p>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition" style={{ color: '#64748b' }}>
-                        <X size={16} />
-                    </button>
+                    <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color: '#64748b' }}><X size={16} /></button>
                 </div>
                 <div className="p-5 space-y-4">
-                    {/* Header info */}
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-xs text-gray-400">Order ID</p>
@@ -188,8 +163,6 @@ function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
                         </div>
                         <StatusBadge status={order.status} />
                     </div>
-
-                    {/* Details */}
                     {[
                         { label: 'เกม', value: order.game },
                         { label: 'แพ็กเกจ', value: order.pkg },
@@ -207,18 +180,16 @@ function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
                             <span className="text-sm font-medium text-white text-right max-w-[60%] truncate">{value}</span>
                         </div>
                     ))}
-
-                    {/* Actions */}
                     <div className="flex gap-2 pt-2">
                         {canRetry && (
                             <button onClick={onRetry}
-                                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
                                 style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>
                                 <RotateCcw size={13} /> Retry
                             </button>
                         )}
                         <button onClick={onEdit}
-                            className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition"
+                            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold"
                             style={{ background: 'rgba(129,140,248,0.1)', color: '#818cf8', border: '1px solid rgba(129,140,248,0.3)' }}>
                             <Pencil size={13} /> เปลี่ยนสถานะ
                         </button>
@@ -229,23 +200,44 @@ function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
     );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ── Order Card (mobile) ────────────────────────────────────────────
+function OrderCard({ o, onSelect }: { o: AdminOrder; onSelect: () => void }) {
+    return (
+        <div onClick={onSelect} className="rounded-2xl p-4 cursor-pointer active:scale-[0.99] transition"
+            style={{ background: 'rgba(11,15,32,0.85)', border: '1px solid #1c2540' }}>
+            <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                    <p className="text-xs font-bold text-white truncate">{o.game}</p>
+                    <p className="text-[10px] truncate" style={{ color: '#64748b' }}>{o.pkg}</p>
+                </div>
+                <StatusBadge status={o.status} />
+            </div>
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-[10px] font-mono" style={{ color: '#64748b' }}>#{o.order_id}</p>
+                    <p className="text-[10px]" style={{ color: '#64748b' }}>UID: {o.uid}</p>
+                </div>
+                <div className="text-right">
+                    <p className="text-sm font-bold text-white">฿{fmt(o.amount)}</p>
+                    <p className="text-[10px]" style={{ color: '#64748b' }}>{fmtDate(o.created_at)}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function OrdersAdminPage() {
     const { token } = useAdminAuth();
-
-    const [orders, setOrders]       = useState<AdminOrder[]>([]);
-    const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 1 });
-    const [loading, setLoading]     = useState(true);
-    const [exporting, setExporting] = useState(false);
-
-    const [statusTab, setStatusTab] = useState('all');
-    const [search, setSearch]       = useState('');
+    const [orders, setOrders]           = useState<AdminOrder[]>([]);
+    const [pagination, setPagination]   = useState<Pagination>({ page: 1, limit: 20, total: 0, totalPages: 1 });
+    const [loading, setLoading]         = useState(true);
+    const [exporting, setExporting]     = useState(false);
+    const [statusTab, setStatusTab]     = useState('all');
+    const [search, setSearch]           = useState('');
     const [searchInput, setSearchInput] = useState('');
-
     const [selectedOrder, setSelectedOrder] = useState<AdminOrder | null>(null);
     const [editOrder, setEditOrder]         = useState<AdminOrder | null>(null);
     const [retrying, setRetrying]           = useState<string | null>(null);
-
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchOrders = useCallback(async (page = 1) => {
@@ -253,8 +245,7 @@ export default function OrdersAdminPage() {
         setLoading(true);
         try {
             const params = new URLSearchParams({
-                page: String(page),
-                limit: '20',
+                page: String(page), limit: '20',
                 ...(statusTab !== 'all' && { status: statusTab }),
                 ...(search && { search }),
             });
@@ -264,13 +255,11 @@ export default function OrdersAdminPage() {
             );
             setOrders(res.data?.data ?? []);
             setPagination(res.data?.pagination ?? { page: 1, limit: 20, total: 0, totalPages: 1 });
-        } catch (e) { console.error(e); }
-        finally { setLoading(false); }
+        } catch (e) { console.error(e); } finally { setLoading(false); }
     }, [token, statusTab, search]);
 
     useEffect(() => { fetchOrders(1); }, [fetchOrders]);
 
-    // Debounce search
     const handleSearchChange = (v: string) => {
         setSearchInput(v);
         if (searchTimer.current) clearTimeout(searchTimer.current);
@@ -281,252 +270,213 @@ export default function OrdersAdminPage() {
         if (!token) return;
         setRetrying(order.order_id);
         try {
-            await axios.post(
-                `${process.env.NEXT_PUBLIC_API_URL}/orders/admin/${order.order_id}/retry`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } },
-            );
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders/admin/${order.order_id}/retry`, {},
+                { headers: { Authorization: `Bearer ${token}` } });
             await fetchOrders(pagination.page);
             setSelectedOrder(null);
-        } catch (e: any) {
-            alert(e?.response?.data?.message ?? 'Retry ไม่สำเร็จ');
-        } finally { setRetrying(null); }
+        } catch (e: any) { alert(e?.response?.data?.message ?? 'Retry ไม่สำเร็จ'); }
+        finally { setRetrying(null); }
     };
 
     const handleExport = async () => {
         if (!token) return;
         setExporting(true);
         try {
-            const params = new URLSearchParams({
-                ...(statusTab !== 'all' && { status: statusTab }),
-            });
+            const params = new URLSearchParams({ ...(statusTab !== 'all' && { status: statusTab }) });
             const res = await axios.get(
                 `${process.env.NEXT_PUBLIC_API_URL}/orders/admin/export?${params}`,
                 { headers: { Authorization: `Bearer ${token}` }, responseType: 'blob' },
             );
-            const url  = URL.createObjectURL(res.data);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = `orders_${new Date().toISOString().slice(0, 10)}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-        } catch { alert('Export ไม่สำเร็จ'); }
-        finally { setExporting(false); }
+            const url = URL.createObjectURL(res.data);
+            const a = document.createElement('a'); a.href = url;
+            a.download = `orders_${new Date().toISOString().slice(0,10)}.csv`;
+            a.click(); URL.revokeObjectURL(url);
+        } catch { alert('Export ไม่สำเร็จ'); } finally { setExporting(false); }
     };
 
-    // Summary counts by status
-    const counts = orders.reduce((acc, o) => {
-        acc[o.status] = (acc[o.status] ?? 0) + 1;
-        return acc;
-    }, {} as Record<string, number>);
+    const counts = orders.reduce((acc, o) => { acc[o.status] = (acc[o.status]??0)+1; return acc; }, {} as Record<string,number>);
 
     return (
-        <div className="p-5 space-y-5" style={{ fontFamily: "'Noto Sans Thai',sans-serif", background: '#080a16', minHeight: '100vh' }}>
+        <div className="p-3 sm:p-5 space-y-4" style={{ fontFamily:"'Noto Sans Thai',sans-serif", background:'#080a16', minHeight:'100vh' }}>
 
-            {/* Modals */}
             {selectedOrder && !editOrder && (
-                <OrderDetailModal
-                    order={selectedOrder} token={token!}
+                <OrderDetailModal order={selectedOrder} token={token!}
                     onClose={() => setSelectedOrder(null)}
                     onEdit={() => setEditOrder(selectedOrder)}
-                    onRetry={() => handleRetry(selectedOrder)}
-                />
+                    onRetry={() => handleRetry(selectedOrder)} />
             )}
             {editOrder && (
-                <EditStatusModal
-                    order={editOrder} token={token!}
+                <EditStatusModal order={editOrder} token={token!}
                     onClose={() => setEditOrder(null)}
-                    onSuccess={() => { setEditOrder(null); setSelectedOrder(null); fetchOrders(pagination.page); }}
-                />
+                    onSuccess={() => { setEditOrder(null); setSelectedOrder(null); fetchOrders(pagination.page); }} />
             )}
 
             {/* Header */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h1 className="text-2xl font-bold text-white">ระบบคำสั่งซื้อ</h1>
-                    <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
-                        ทั้งหมด {pagination.total.toLocaleString()} ออเดอร์
-                    </p>
+                    <h1 className="text-lg font-bold text-white">ระบบคำสั่งซื้อ</h1>
+                    <p className="text-[10px]" style={{ color:'#64748b' }}>ทั้งหมด {pagination.total.toLocaleString()} ออเดอร์</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={() => fetchOrders(pagination.page)} disabled={loading}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50"
-                        style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #1c2540' }}>
-                        <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> รีเฟรช
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                        style={{ background:'rgba(255,255,255,0.05)', color:'#94a3b8', border:'1px solid #1c2540' }}>
+                        <RefreshCw size={12} className={loading?'animate-spin':''} />
+                        <span className="hidden sm:inline">รีเฟรช</span>
                     </button>
                     <button onClick={handleExport} disabled={exporting}
-                        className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold transition disabled:opacity-50"
-                        style={{ background: 'rgba(52,211,153,0.1)', color: '#34d399', border: '1px solid rgba(52,211,153,0.3)' }}>
-                        <Download size={13} /> {exporting ? 'กำลัง Export...' : 'Export CSV'}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold disabled:opacity-50"
+                        style={{ background:'rgba(52,211,153,0.1)', color:'#34d399', border:'1px solid rgba(52,211,153,0.3)' }}>
+                        <Download size={12} />
+                        <span className="hidden sm:inline">{exporting?'กำลัง Export...':'Export CSV'}</span>
                     </button>
                 </div>
             </div>
 
-            {/* Summary Cards */}
+            {/* Summary Cards — 3 col mobile, 6 col sm */}
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                {(['pending', 'processing', 'completed', 'failed', 'refunded', 'cancelled'] as OrderStatus[]).map(s => {
-                    const cfg = STATUS_CFG[s];
-                    const Icon = cfg.icon;
+                {(['pending','processing','completed','failed','refunded','cancelled'] as OrderStatus[]).map(s => {
+                    const cfg = STATUS_CFG[s]; const Icon = cfg.icon;
                     return (
                         <button key={s} onClick={() => setStatusTab(s)}
-                            className="rounded-2xl p-3 text-left transition"
+                            className="rounded-xl p-2.5 text-left transition"
                             style={{
-                                ...cardBg,
-                                border: statusTab === s ? `1px solid ${cfg.border}` : '1px solid #1c2540',
-                                background: statusTab === s ? cfg.bg : 'rgba(11,15,32,0.85)',
+                                background: statusTab===s ? cfg.bg : 'rgba(11,15,32,0.85)',
+                                border: `1px solid ${statusTab===s ? cfg.border : '#1c2540'}`,
                             }}>
-                            <div className="flex items-center gap-1.5 mb-1">
-                                <Icon size={11} style={{ color: cfg.color }} />
-                                <p className="text-[10px] font-semibold" style={{ color: cfg.color }}>{cfg.label}</p>
+                            <div className="flex items-center gap-1 mb-1">
+                                <Icon size={10} style={{ color:cfg.color }} />
+                                <p className="text-[9px] font-semibold truncate" style={{ color:cfg.color }}>{cfg.label}</p>
                             </div>
-                            <p className="text-xl font-bold text-white">{counts[s] ?? 0}</p>
+                            <p className="text-lg font-bold text-white">{counts[s]??0}</p>
                         </button>
                     );
                 })}
             </div>
 
-            {/* Search + Filter tabs */}
-            <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search */}
-                <div className="flex items-center gap-2 flex-1 max-w-sm rounded-xl px-3 py-2"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e293b' }}>
-                    <Search size={13} style={{ color: '#64748b' }} />
+            {/* Search + Filter */}
+            <div className="space-y-2">
+                <div className="flex items-center gap-2 rounded-xl px-3 py-2.5"
+                    style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1e293b' }}>
+                    <Search size={13} style={{ color:'#64748b' }} />
                     <input value={searchInput} onChange={e => handleSearchChange(e.target.value)}
                         placeholder="ค้นหา UID / อีเมล / Order ID..."
-                        className="bg-transparent outline-none text-xs text-white placeholder-[#3a4a6a] w-full" />
-                    {searchInput && (
-                        <button onClick={() => { setSearchInput(''); setSearch(''); }} style={{ color: '#64748b' }}>
-                            <X size={12} />
-                        </button>
-                    )}
+                        className="bg-transparent outline-none text-xs text-white placeholder-[#3a4a6a] flex-1" />
+                    {searchInput && <button onClick={() => { setSearchInput(''); setSearch(''); }} style={{ color:'#64748b' }}><X size={12} /></button>}
                 </div>
-
-                {/* Status Tabs */}
-                <div className="flex gap-1.5 flex-wrap">
+                {/* Status tabs — scroll horizontal บน mobile */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                     {STATUS_TABS.map(tab => (
                         <button key={tab.key} onClick={() => setStatusTab(tab.key)}
-                            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition"
-                            style={statusTab === tab.key
-                                ? { background: 'rgba(56,189,248,0.18)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.35)' }
-                                : { background: 'rgba(255,255,255,0.04)', color: '#64748b', border: '1px solid #1c2540' }}>
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition flex-shrink-0"
+                            style={statusTab===tab.key
+                                ? { background:'rgba(56,189,248,0.18)', color:'#38bdf8', border:'1px solid rgba(56,189,248,0.35)' }
+                                : { background:'rgba(255,255,255,0.04)', color:'#64748b', border:'1px solid #1c2540' }}>
                             {tab.label}
                         </button>
                     ))}
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="rounded-2xl overflow-hidden" style={cardBg}>
-                {/* Header */}
-                <div className="grid text-[11px] font-bold px-5 py-3 gap-4"
-                    style={{ gridTemplateColumns: '80px 2fr 1.5fr 1fr 0.8fr 0.8fr 100px', color: '#64748b', borderBottom: '1px solid #1c2540' }}>
-                    <span>Order ID</span>
-                    <span>เกม / แพ็กเกจ</span>
-                    <span>UID / อีเมล</span>
-                    <span>ยอด</span>
-                    <span>วิธีชำระ</span>
-                    <span>สถานะ</span>
-                    <span className="text-right">จัดการ</span>
+            {/* Table (desktop) / Cards (mobile) */}
+            {loading ? (
+                <div className="space-y-2">
+                    {Array.from({length:5}).map((_,i) => (
+                        <div key={i} className="rounded-2xl p-4 animate-pulse" style={cardBg}>
+                            <div className="flex justify-between mb-2">
+                                <div className="h-3 w-32 rounded" style={{ background:'#1c2540' }} />
+                                <div className="h-5 w-16 rounded-full" style={{ background:'#1c2540' }} />
+                            </div>
+                            <div className="h-2 w-24 rounded" style={{ background:'#1c2540' }} />
+                        </div>
+                    ))}
                 </div>
-
-                {/* Rows */}
-                {loading ? (
-                    Array.from({ length: 6 }).map((_, i) => (
-                        <div key={i} className="grid items-center px-5 py-4 gap-4"
-                            style={{ gridTemplateColumns: '80px 2fr 1.5fr 1fr 0.8fr 0.8fr 100px', borderBottom: '1px solid #0d1525' }}>
-                            {Array.from({ length: 7 }).map((_, j) => (
-                                <div key={j} className="h-4 rounded-lg animate-pulse" style={{ background: '#1c2540' }} />
-                            ))}
-                        </div>
-                    ))
-                ) : orders.length === 0 ? (
-                    <div className="text-center py-16 space-y-2">
-                        <Package size={32} className="mx-auto" style={{ color: '#1c2540' }} />
-                        <p className="text-sm" style={{ color: '#64748b' }}>ไม่พบออเดอร์</p>
+            ) : orders.length === 0 ? (
+                <div className="text-center py-16 space-y-2">
+                    <Package size={32} className="mx-auto" style={{ color:'#1c2540' }} />
+                    <p className="text-sm" style={{ color:'#64748b' }}>ไม่พบออเดอร์</p>
+                </div>
+            ) : (
+                <>
+                    {/* Mobile: Cards */}
+                    <div className="sm:hidden space-y-2">
+                        {orders.map(o => (
+                            <OrderCard key={o.order_id} o={o} onSelect={() => setSelectedOrder(o)} />
+                        ))}
                     </div>
-                ) : (
-                    orders.map((o, i) => (
-                        <div key={o.order_id}
-                            onClick={() => setSelectedOrder(o)}
-                            className="grid items-center px-5 py-4 gap-4 hover:bg-white/[0.02] transition cursor-pointer"
-                            style={{ gridTemplateColumns: '80px 2fr 1.5fr 1fr 0.8fr 0.8fr 100px', borderBottom: i < orders.length - 1 ? '1px solid #0d1525' : 'none' }}>
 
-                            {/* Order ID */}
-                            <span className="text-xs font-mono font-bold" style={{ color: '#38bdf8' }}>#{o.order_id}</span>
-
-                            {/* Game / Package */}
-                            <div>
-                                <p className="text-sm font-semibold text-white truncate">{o.game}</p>
-                                <p className="text-[11px] truncate" style={{ color: '#64748b' }}>{o.pkg}</p>
-                            </div>
-
-                            {/* UID / Email */}
-                            <div>
-                                <p className="text-xs font-mono text-white">{o.uid}</p>
-                                <p className="text-[10px] truncate" style={{ color: '#64748b' }}>{o.email}</p>
-                            </div>
-
-                            {/* Amount */}
-                            <div>
-                                <p className="text-sm font-bold text-white">฿{fmt(o.amount)}</p>
-                                {o.discount > 0 && (
-                                    <p className="text-[10px]" style={{ color: '#a78bfa' }}>-฿{fmt(o.discount)}</p>
-                                )}
-                            </div>
-
-                            {/* Method */}
-                            <p className="text-xs truncate" style={{ color: '#94a3b8' }}>{o.method}</p>
-
-                            {/* Status */}
-                            <StatusBadge status={o.status} />
-
-                            {/* Actions */}
-                            <div className="flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
-                                {['failed', 'cancelled'].includes(o.status) && (
-                                    <button onClick={() => handleRetry(o)} disabled={retrying === o.order_id}
-                                        title="Retry"
-                                        className="p-1.5 rounded-lg transition disabled:opacity-50"
-                                        style={{ color: '#38bdf8', background: 'rgba(56,189,248,0.08)' }}>
-                                        <RotateCcw size={13} className={retrying === o.order_id ? 'animate-spin' : ''} />
-                                    </button>
-                                )}
-                                <button onClick={() => setEditOrder(o)} title="เปลี่ยนสถานะ"
-                                    className="p-1.5 rounded-lg hover:bg-white/10 transition" style={{ color: '#64748b' }}>
-                                    <Pencil size={13} />
-                                </button>
-                            </div>
+                    {/* Desktop: Table */}
+                    <div className="hidden sm:block rounded-2xl overflow-hidden" style={cardBg}>
+                        <div className="grid text-[11px] font-bold px-5 py-3 gap-3"
+                            style={{ gridTemplateColumns:'80px 2fr 1.5fr 0.8fr 0.7fr 0.9fr 90px', color:'#64748b', borderBottom:'1px solid #1c2540' }}>
+                            <span>Order ID</span><span>เกม / แพ็กเกจ</span><span>UID / อีเมล</span>
+                            <span>ยอด</span><span>วิธีชำระ</span><span>สถานะ</span><span className="text-right">จัดการ</span>
                         </div>
-                    ))
-                )}
-            </div>
+                        {orders.map((o, i) => (
+                            <div key={o.order_id} onClick={() => setSelectedOrder(o)}
+                                className="grid items-center px-5 py-3.5 gap-3 hover:bg-white/[0.02] transition cursor-pointer"
+                                style={{ gridTemplateColumns:'80px 2fr 1.5fr 0.8fr 0.7fr 0.9fr 90px', borderBottom:i<orders.length-1?'1px solid #0d1525':'none' }}>
+                                <span className="text-xs font-mono font-bold" style={{ color:'#38bdf8' }}>#{o.order_id}</span>
+                                <div>
+                                    <p className="text-xs font-semibold text-white truncate">{o.game}</p>
+                                    <p className="text-[10px] truncate" style={{ color:'#64748b' }}>{o.pkg}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-mono text-white">{o.uid}</p>
+                                    <p className="text-[10px] truncate" style={{ color:'#64748b' }}>{o.email}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-bold text-white">฿{fmt(o.amount)}</p>
+                                    {o.discount>0 && <p className="text-[10px]" style={{ color:'#a78bfa' }}>-฿{fmt(o.discount)}</p>}
+                                </div>
+                                <p className="text-xs truncate" style={{ color:'#94a3b8' }}>{o.method}</p>
+                                <StatusBadge status={o.status} />
+                                <div className="flex items-center justify-end gap-1.5" onClick={e => e.stopPropagation()}>
+                                    {['failed','cancelled'].includes(o.status) && (
+                                        <button onClick={() => handleRetry(o)} disabled={retrying===o.order_id} title="Retry"
+                                            className="p-1.5 rounded-lg disabled:opacity-50"
+                                            style={{ color:'#38bdf8', background:'rgba(56,189,248,0.08)' }}>
+                                            <RotateCcw size={12} className={retrying===o.order_id?'animate-spin':''} />
+                                        </button>
+                                    )}
+                                    <button onClick={() => setEditOrder(o)} title="เปลี่ยนสถานะ"
+                                        className="p-1.5 rounded-lg hover:bg-white/10" style={{ color:'#64748b' }}>
+                                        <Pencil size={12} />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between">
-                    <p className="text-xs" style={{ color: '#64748b' }}>
-                        หน้า {pagination.page} / {pagination.totalPages} · {pagination.total.toLocaleString()} รายการ
+                    <p className="text-xs" style={{ color:'#64748b' }}>
+                        {pagination.page}/{pagination.totalPages} · {pagination.total.toLocaleString()} รายการ
                     </p>
                     <div className="flex items-center gap-1.5">
-                        <button onClick={() => fetchOrders(pagination.page - 1)} disabled={pagination.page <= 1 || loading}
-                            className="p-2 rounded-lg transition disabled:opacity-30"
-                            style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #1c2540' }}>
+                        <button onClick={() => fetchOrders(pagination.page-1)} disabled={pagination.page<=1||loading}
+                            className="p-2 rounded-lg disabled:opacity-30"
+                            style={{ background:'rgba(255,255,255,0.05)', color:'#94a3b8', border:'1px solid #1c2540' }}>
                             <ChevronLeft size={14} />
                         </button>
-                        {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
-                            const p = Math.max(1, Math.min(pagination.page - 2, pagination.totalPages - 4)) + i;
+                        {Array.from({length:Math.min(5,pagination.totalPages)},(_,i) => {
+                            const p = Math.max(1,Math.min(pagination.page-2,pagination.totalPages-4))+i;
                             return (
                                 <button key={p} onClick={() => fetchOrders(p)} disabled={loading}
-                                    className="w-8 h-8 rounded-lg text-xs font-semibold transition"
-                                    style={p === pagination.page
-                                        ? { background: 'rgba(56,189,248,0.18)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.35)' }
-                                        : { background: 'rgba(255,255,255,0.04)', color: '#64748b', border: '1px solid #1c2540' }}>
+                                    className="w-8 h-8 rounded-lg text-xs font-semibold"
+                                    style={p===pagination.page
+                                        ? { background:'rgba(56,189,248,0.18)', color:'#38bdf8', border:'1px solid rgba(56,189,248,0.35)' }
+                                        : { background:'rgba(255,255,255,0.04)', color:'#64748b', border:'1px solid #1c2540' }}>
                                     {p}
                                 </button>
                             );
                         })}
-                        <button onClick={() => fetchOrders(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages || loading}
-                            className="p-2 rounded-lg transition disabled:opacity-30"
-                            style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #1c2540' }}>
+                        <button onClick={() => fetchOrders(pagination.page+1)} disabled={pagination.page>=pagination.totalPages||loading}
+                            className="p-2 rounded-lg disabled:opacity-30"
+                            style={{ background:'rgba(255,255,255,0.05)', color:'#94a3b8', border:'1px solid #1c2540' }}>
                             <ChevronRight size={14} />
                         </button>
                     </div>

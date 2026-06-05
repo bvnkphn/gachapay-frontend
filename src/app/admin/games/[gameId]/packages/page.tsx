@@ -21,23 +21,16 @@ type GamePackage = {
 type Game = { id: string; name: string; slug: string; image?: string };
 
 const cardBg = { background: 'rgba(11,15,32,0.85)', border: '1px solid #1c2540' };
+function fp(n: number) { return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function toDatetimeLocal(iso: string | null) { if (!iso) return ''; return new Date(iso).toISOString().slice(0,16); }
 
-function formatPrice(n: number) {
-  return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-function toDatetimeLocal(iso: string | null) {
-  if (!iso) return '';
-  return new Date(iso).toISOString().slice(0, 16);
-}
-
-// ─── Field wrapper ────────────────────────────────────────────────────────────
 function Field({ label, prefix, children }: { label: string; prefix?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#94a3b8' }}>{label}</label>
+      <label className="text-xs font-semibold mb-1.5 block" style={{ color:'#94a3b8' }}>{label}</label>
       {prefix ? (
-        <div className="flex items-center rounded-xl overflow-hidden" style={{ border: '1px solid #1e293b', background: '#0d1526' }}>
-          <span className="px-3 py-2.5 text-sm font-bold flex-shrink-0" style={{ color: '#64748b', borderRight: '1px solid #1e293b' }}>{prefix}</span>
+        <div className="flex items-center rounded-xl overflow-hidden" style={{ border:'1px solid #1e293b', background:'#0d1526' }}>
+          <span className="px-3 py-2.5 text-sm font-bold flex-shrink-0" style={{ color:'#64748b', borderRight:'1px solid #1e293b' }}>{prefix}</span>
           {children}
         </div>
       ) : children}
@@ -49,27 +42,22 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement> & { noBg?:
   const { noBg, className, ...rest } = props;
   return (
     <input {...rest}
-      className={`w-full px-3 py-2.5 text-sm text-white focus:outline-none bg-transparent placeholder-[#3a4a6a] ${className ?? ''}`}
-      style={noBg ? {} : { background: '#0d1526', border: '1px solid #1e293b', borderRadius: 12 }}
-    />
+      className={`w-full px-3 py-2.5 text-sm text-white focus:outline-none bg-transparent placeholder-[#3a4a6a] ${className??''}`}
+      style={noBg ? {} : { background:'#0d1526', border:'1px solid #1e293b', borderRadius:12 }} />
   );
 }
 
-// ─── Package Form Modal ───────────────────────────────────────────────────────
 function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
   gameId: string; token: string; pkg?: GamePackage | null; onClose: () => void; onSuccess: () => void;
 }) {
   const isEdit = !!pkg;
   const [form, setForm] = useState({
-    sku:            pkg?.sku ?? '',
-    price:          pkg?.price ?? 0,
-    diamond:        0,
-    promo:          pkg?.flashSale.isActive ? 'flash_sale' : 'none',
+    sku: pkg?.sku ?? '', price: pkg?.price ?? 0, diamond: 0,
+    promo: pkg?.flashSale.isActive ? 'flash_sale' : 'none',
     flashSalePrice: pkg?.flashSale.price ?? '',
     flashSaleStart: toDatetimeLocal(pkg?.flashSale.start ?? null),
-    flashSaleEnd:   toDatetimeLocal(pkg?.flashSale.end   ?? null),
-    quota:          pkg?.quota.limit ?? '',
-    isActive:       pkg?.isActive ?? true,
+    flashSaleEnd:   toDatetimeLocal(pkg?.flashSale.end ?? null),
+    quota: pkg?.quota.limit ?? '', isActive: pkg?.isActive ?? true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -79,101 +67,81 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
   const handlePromoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
-    setForm(f => ({
-      ...f, promo: val,
-      flashSalePrice: val === 'none' ? '' : f.flashSalePrice,
-      flashSaleStart: val === 'none' ? '' : f.flashSaleStart,
-      flashSaleEnd:   val === 'none' ? '' : f.flashSaleEnd,
+    setForm(f => ({ ...f, promo:val,
+      flashSalePrice: val==='none'?'':f.flashSalePrice,
+      flashSaleStart: val==='none'?'':f.flashSaleStart,
+      flashSaleEnd:   val==='none'?'':f.flashSaleEnd,
     }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError('');
-    const body: Record<string, any> = {
-      price: Number(form.price), isActive: form.isActive,
-      quota: form.quota !== '' ? Number(form.quota) : null,
-    };
-    const showFlash = form.promo !== 'none';
-    if (showFlash && form.flashSalePrice !== '' && form.flashSaleStart && form.flashSaleEnd) {
+    const body: Record<string, any> = { price:Number(form.price), isActive:form.isActive, quota:form.quota!==''?Number(form.quota):null };
+    if (form.promo!=='none' && form.flashSalePrice!=='' && form.flashSaleStart && form.flashSaleEnd) {
       body.flashSalePrice = Number(form.flashSalePrice);
       body.flashSaleStart = new Date(form.flashSaleStart).toISOString();
       body.flashSaleEnd   = new Date(form.flashSaleEnd).toISOString();
-    } else {
-      body.flashSalePrice = null; body.flashSaleStart = null; body.flashSaleEnd = null;
-    }
-    if (!isEdit) { body.sku = form.sku; body.name = form.sku; }
+    } else { body.flashSalePrice=null; body.flashSaleStart=null; body.flashSaleEnd=null; }
+    if (!isEdit) { body.sku=form.sku; body.name=form.sku; }
     try {
       if (isEdit) {
         await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages/${pkg!.id}`,
-          body, { headers: { Authorization: `Bearer ${token}` } });
+          body, { headers: { Authorization:`Bearer ${token}` } });
       } else {
         await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages`,
-          body, { headers: { Authorization: `Bearer ${token}` } });
+          body, { headers: { Authorization:`Bearer ${token}` } });
       }
       onSuccess(); onClose();
     } catch (err: any) { setError(err?.response?.data?.message ?? 'เกิดข้อผิดพลาด'); }
     finally { setLoading(false); }
   };
 
-  // countdown
-  const end   = form.flashSaleEnd   ? new Date(form.flashSaleEnd)   : null;
+  const end = form.flashSaleEnd ? new Date(form.flashSaleEnd) : null;
   const start = form.flashSaleStart ? new Date(form.flashSaleStart) : null;
-  const diff  = end && start ? end.getTime() - start.getTime() : 0;
+  const diff = end && start ? end.getTime()-start.getTime() : 0;
   const countdown = diff > 0
     ? `${String(Math.floor(diff/3600000)).padStart(2,'0')}:${String(Math.floor((diff%3600000)/60000)).padStart(2,'0')}:${String(Math.floor((diff%60000)/1000)).padStart(2,'0')}`
     : '';
 
-  const showFlash = form.promo !== 'none';
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.75)' }}>
-      <div className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl" style={{ background: '#111827', border: '1px solid #1e293b' }}>
-
-        <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: '1px solid #1e293b' }}>
-          <p className="text-base font-bold text-white">{isEdit ? 'แก้ไขข้อมูลแพ็กเกจ' : 'เพิ่มแพ็กเกจใหม่'}</p>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-white/10 transition" style={{ color: '#64748b' }}>
-            <X size={18} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+      style={{ background:'rgba(0,0,0,0.75)' }}>
+      {/* บน mobile ให้ modal ขึ้นจากด้านล่าง (bottom sheet) */}
+      <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden shadow-2xl"
+        style={{ background:'#111827', border:'1px solid #1e293b', maxHeight:'92vh' }}>
+        <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom:'1px solid #1e293b' }}>
+          <p className="text-sm font-bold text-white">{isEdit?'แก้ไขแพ็กเกจ':'เพิ่มแพ็กเกจใหม่'}</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color:'#64748b' }}><X size={16} /></button>
         </div>
+        <form onSubmit={handleSubmit} className="px-5 pb-6 pt-4 space-y-4 overflow-y-auto" style={{ maxHeight:'calc(92vh - 64px)' }}>
 
-        <form onSubmit={handleSubmit} className="px-6 pb-6 pt-5 space-y-4 max-h-[80vh] overflow-y-auto">
-
-          {/* ชื่อแพ็กเกจ — readonly เมื่อแก้ไข */}
           <Field label="ชื่อแพ็กเกจ">
             {isEdit
-              ? <div className="w-full px-3 py-2.5 text-sm rounded-xl" style={{ background: '#0d1526', border: '1px solid #1e293b', color: '#64748b' }}>
-                  {pkg!.name}
-                </div>
+              ? <div className="w-full px-3 py-2.5 text-sm rounded-xl" style={{ background:'#0d1526', border:'1px solid #1e293b', color:'#64748b' }}>{pkg!.name}</div>
               : <TextInput value={form.sku} onChange={set('sku')} required placeholder="ชื่อแพ็กเกจ" />}
           </Field>
 
-          {/* ราคา + ต้นทุน */}
           <div className="grid grid-cols-2 gap-3">
-            {/* ราคา — แก้ได้ */}
             <Field label="ราคา (PRICE)" prefix="฿">
               <TextInput noBg type="number" min="0" step="0.01" value={form.price} onChange={set('price')} required />
             </Field>
-            {/* ต้นทุน — readonly */}
             <Field label="ต้นทุน (COST)" prefix="฿">
-              <div className="px-3 py-2.5 text-sm font-semibold" style={{ color: '#64748b' }}>
-                {isEdit ? formatPrice(Number(pkg!.cost)) : '—'}
+              <div className="px-3 py-2.5 text-sm font-semibold" style={{ color:'#64748b' }}>
+                {isEdit ? fp(Number(pkg!.cost)) : '—'}
               </div>
             </Field>
           </div>
 
-          {/* แต้มสะสม + โปรโมชั่น */}
           <div className="grid grid-cols-2 gap-3">
-            {/* แต้มสะสม — แก้ได้ (UI only) */}
-            <Field label="แต้มสะสม (DIAMOND)" prefix="◆">
+            <Field label="แต้มสะสม" prefix="◆">
               <TextInput noBg type="number" min="0" value={form.diamond}
-                onChange={e => setForm(f => ({ ...f, diamond: Number(e.target.value) }))} placeholder="0" />
+                onChange={e => setForm(f => ({...f,diamond:Number(e.target.value)}))} placeholder="0" />
             </Field>
-            {/* โปรโมชั่น — dropdown */}
             <Field label="โปรโมชั่น">
               <div className="relative">
                 <select value={form.promo} onChange={handlePromoChange}
                   className="w-full px-3 py-2.5 text-sm text-white rounded-xl appearance-none focus:outline-none"
-                  style={{ background: '#0d1526', border: '1px solid #1e293b' }}>
+                  style={{ background:'#0d1526', border:'1px solid #1e293b' }}>
                   <option value="none">ไม่มีโปรโมชั่น</option>
                   <option value="flash_sale">Flash Sale</option>
                   <option value="happy_hour">Happy Hour</option>
@@ -183,59 +151,47 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
             </Field>
           </div>
 
-          {/* Flash Sale / Happy Hour fields */}
-          {showFlash && (
-            <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+          {form.promo !== 'none' && (
+            <div className="rounded-xl p-4 space-y-3" style={{ background:'rgba(245,158,11,0.06)', border:'1px solid rgba(245,158,11,0.2)' }}>
               <div className="flex items-center gap-2">
-                <Zap size={13} style={{ color: '#f59e0b' }} />
-                <p className="text-xs font-bold" style={{ color: '#f59e0b' }}>
-                  {form.promo === 'happy_hour' ? 'Happy Hour' : 'Flash Sale'}
-                </p>
+                <Zap size={12} style={{ color:'#f59e0b' }} />
+                <p className="text-xs font-bold" style={{ color:'#f59e0b' }}>{form.promo==='happy_hour'?'Happy Hour':'Flash Sale'}</p>
               </div>
+              <Field label="ราคาพิเศษ" prefix="฿">
+                <TextInput noBg type="number" min="0" step="0.01" value={form.flashSalePrice} onChange={set('flashSalePrice')} placeholder="0.00" />
+              </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="ราคาพิเศษ (฿)" prefix="฿">
-                  <TextInput noBg type="number" min="0" step="0.01"
-                    value={form.flashSalePrice} onChange={set('flashSalePrice')} placeholder="0.00" />
-                </Field>
-                <div />
-                <Field label="เริ่มต้น">
-                  <TextInput type="datetime-local" value={form.flashSaleStart} onChange={set('flashSaleStart')} />
-                </Field>
-                <Field label="สิ้นสุด">
-                  <TextInput type="datetime-local" value={form.flashSaleEnd} onChange={set('flashSaleEnd')} />
-                </Field>
+                <Field label="เริ่มต้น"><TextInput type="datetime-local" value={form.flashSaleStart} onChange={set('flashSaleStart')} /></Field>
+                <Field label="สิ้นสุด"><TextInput type="datetime-local" value={form.flashSaleEnd} onChange={set('flashSaleEnd')} /></Field>
               </div>
               {countdown && (
-                <Field label="เวลาจำกัดในการขาย" prefix="⏱">
+                <Field label="ระยะเวลา" prefix="⏱">
                   <div className="px-3 py-2.5 text-sm font-mono font-bold text-white bg-transparent">{countdown}</div>
                 </Field>
               )}
             </div>
           )}
 
-          {/* Quota */}
-          <Field label="จำกัดจำนวนการขาย (เว้นว่าง = ไม่จำกัด)">
+          <Field label="จำกัดจำนวน (เว้นว่าง = ไม่จำกัด)">
             <TextInput type="number" min="1" value={form.quota} onChange={set('quota')} placeholder="เช่น 100" />
           </Field>
 
           {error && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
-              style={{ background: 'rgba(248,113,113,0.1)', border: '1px solid rgba(248,113,113,0.25)' }}>
-              <AlertCircle size={13} className="text-red-400 flex-shrink-0" />
+              style={{ background:'rgba(248,113,113,0.1)', border:'1px solid rgba(248,113,113,0.25)' }}>
+              <AlertCircle size={12} className="text-red-400 flex-shrink-0" />
               <p className="text-xs text-red-400">{error}</p>
             </div>
           )}
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold transition"
-              style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid #1e293b' }}>
-              ยกเลิก
-            </button>
+              className="flex-1 py-3 rounded-xl text-sm font-semibold"
+              style={{ background:'rgba(255,255,255,0.05)', color:'#94a3b8', border:'1px solid #1e293b' }}>ยกเลิก</button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-3 rounded-xl text-sm font-bold text-white transition disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg,#22c55e,#16a34a)' }}>
-              {loading ? 'กำลังบันทึก...' : 'บันทึกข้อมูล'}
+              className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50"
+              style={{ background:'linear-gradient(135deg,#22c55e,#16a34a)' }}>
+              {loading?'กำลังบันทึก...':'บันทึก'}
             </button>
           </div>
         </form>
@@ -244,7 +200,6 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
   );
 }
 
-// ─── Delete Modal ─────────────────────────────────────────────────────────────
 function DeleteModal({ pkg, gameId, token, onClose, onSuccess }: {
   pkg: GamePackage; gameId: string; token: string; onClose: () => void; onSuccess: () => void;
 }) {
@@ -254,34 +209,34 @@ function DeleteModal({ pkg, gameId, token, onClose, onSuccess }: {
     setLoading(true); setError('');
     try {
       await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages/${pkg.id}`,
-        { headers: { Authorization: `Bearer ${token}` } });
+        { headers: { Authorization:`Bearer ${token}` } });
       onSuccess(); onClose();
     } catch (err: any) { setError(err?.response?.data?.message ?? 'ลบไม่สำเร็จ'); }
     finally { setLoading(false); }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.85)' }}>
-      <div className="w-full max-w-sm rounded-2xl p-6 space-y-4" style={{ background: '#111827', border: '1px solid rgba(248,113,113,0.3)' }}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background:'rgba(0,0,0,0.85)' }}>
+      <div className="w-full max-w-sm rounded-2xl p-5 space-y-4" style={{ background:'#111827', border:'1px solid rgba(248,113,113,0.3)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(248,113,113,0.15)' }}>
-            <Trash2 size={16} className="text-red-400" />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background:'rgba(248,113,113,0.15)' }}>
+            <Trash2 size={15} className="text-red-400" />
           </div>
           <div>
             <p className="text-sm font-bold text-white">ยืนยันการลบ</p>
-            <p className="text-xs" style={{ color: '#64748b' }}>{pkg.name}</p>
+            <p className="text-xs" style={{ color:'#64748b' }}>{pkg.name}</p>
           </div>
         </div>
-        <p className="text-xs leading-relaxed" style={{ color: '#94a3b8' }}>
-          แพ็กเกจนี้จะถูก <strong className="text-red-400">ปิดใช้งาน</strong> และไม่แสดงในหน้าบ้าน
+        <p className="text-xs leading-relaxed" style={{ color:'#94a3b8' }}>
+          แพ็กเกจนี้จะถูก <strong className="text-red-400">ปิดใช้งาน</strong>
         </p>
         {error && <p className="text-red-400 text-xs">{error}</p>}
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 py-2 rounded-xl text-sm font-semibold text-gray-400"
-            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid #1e293b' }}>ยกเลิก</button>
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-400"
+            style={{ background:'rgba(255,255,255,0.05)', border:'1px solid #1e293b' }}>ยกเลิก</button>
           <button onClick={handleDelete} disabled={loading}
-            className="flex-1 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
-            style={{ background: 'rgba(248,113,113,0.2)', border: '1px solid rgba(248,113,113,0.4)' }}>
-            {loading ? 'กำลังลบ...' : 'ลบแพ็กเกจ'}
+            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background:'rgba(248,113,113,0.2)', border:'1px solid rgba(248,113,113,0.4)' }}>
+            {loading?'กำลังลบ...':'ลบแพ็กเกจ'}
           </button>
         </div>
       </div>
@@ -289,62 +244,114 @@ function DeleteModal({ pkg, gameId, token, onClose, onSuccess }: {
   );
 }
 
-// ─── Package Row ──────────────────────────────────────────────────────────────
-function PackageRow({ pkg, onEdit, onDelete }: { pkg: GamePackage; onEdit: (p: GamePackage) => void; onDelete: (p: GamePackage) => void }) {
-  const flashActive = pkg.flashSale.isActive;
-  const isSoldOut   = pkg.quota.isSoldOut;
+// ── Package Card (mobile) ─────────────────────────────────────────
+function PackageCard({ pkg, onEdit, onDelete }: { pkg: GamePackage; onEdit: () => void; onDelete: () => void }) {
+  const flash = pkg.flashSale.isActive;
+  const sold  = pkg.quota.isSoldOut;
+  return (
+    <div className="rounded-2xl p-4" style={cardBg}>
+      <div className="flex items-start justify-between gap-2 mb-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <p className="text-sm font-semibold text-white truncate">{pkg.name}</p>
+            {flash && <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+              style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b' }}><Zap size={8} />FLASH</span>}
+            {sold  && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+              style={{ background:'rgba(248,113,113,0.15)', color:'#f87171' }}>หมด</span>}
+            {!pkg.isActive && <span className="px-1.5 py-0.5 rounded-full text-[9px] font-bold"
+              style={{ background:'rgba(100,116,139,0.15)', color:'#64748b' }}>ปิด</span>}
+          </div>
+          <p className="text-[10px] font-mono mt-0.5" style={{ color:'#3a4a6a' }}>{pkg.sku}</p>
+        </div>
+        <div className="flex gap-1.5 flex-shrink-0">
+          <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/10" style={{ color:'#64748b' }}><Pencil size={13} /></button>
+          <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10" style={{ color:'#64748b' }}><Trash2 size={13} /></button>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        <div className="rounded-xl px-3 py-2" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #141c30' }}>
+          <p className="text-[9px] mb-0.5" style={{ color:'#64748b' }}>ราคาขาย</p>
+          <p className="text-sm font-bold text-white">฿{fp(pkg.effectivePrice)}</p>
+          {flash && <p className="text-[9px] line-through" style={{ color:'#64748b' }}>฿{fp(pkg.price)}</p>}
+        </div>
+        <div className="rounded-xl px-3 py-2" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #141c30' }}>
+          <p className="text-[9px] mb-0.5" style={{ color:'#64748b' }}>ต้นทุน</p>
+          <p className="text-sm font-semibold" style={{ color:'#94a3b8' }}>฿{fp(pkg.cost)}</p>
+        </div>
+        <div className="rounded-xl px-3 py-2" style={{ background:'rgba(255,255,255,0.03)', border:'1px solid #141c30' }}>
+          <p className="text-[9px] mb-0.5" style={{ color:'#64748b' }}>กำไร</p>
+          <p className="text-sm font-semibold" style={{ color:pkg.profit>=0?'#34d399':'#f87171' }}>฿{fp(pkg.profit)}</p>
+        </div>
+      </div>
+      {pkg.quota.limit !== null && (
+        <div className="mt-2">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[9px]" style={{ color:'#64748b' }}>Quota</span>
+            <span className="text-[9px]" style={{ color:'#64748b' }}>{pkg.quota.sold}/{pkg.quota.limit}</span>
+          </div>
+          <div className="h-1 rounded-full overflow-hidden" style={{ background:'#1c2540' }}>
+            <div className="h-full rounded-full" style={{ width:`${Math.min(100,(pkg.quota.sold/pkg.quota.limit!)*100)}%`, background:sold?'#f87171':'#38bdf8' }} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Package Row (desktop) ─────────────────────────────────────────
+function PackageRow({ pkg, onEdit, onDelete }: { pkg: GamePackage; onEdit: () => void; onDelete: () => void }) {
+  const flash = pkg.flashSale.isActive;
+  const sold  = pkg.quota.isSoldOut;
   return (
     <div className="grid items-center px-5 py-4 hover:bg-white/[0.02] transition gap-4"
-      style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 80px', borderBottom: '1px solid #0d1525' }}>
+      style={{ gridTemplateColumns:'2.5fr 1fr 1fr 1fr 1fr 80px', borderBottom:'1px solid #0d1525' }}>
       <div>
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-semibold text-white">{pkg.name}</p>
-          {flashActive && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-            style={{ background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }}><Zap size={9} /> FLASH</span>}
-          {isSoldOut && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-            style={{ background: 'rgba(248,113,113,0.15)', color: '#f87171', border: '1px solid rgba(248,113,113,0.3)' }}>หมดแล้ว</span>}
+          {flash && <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background:'rgba(245,158,11,0.15)', color:'#f59e0b', border:'1px solid rgba(245,158,11,0.3)' }}><Zap size={9}/>FLASH</span>}
+          {sold && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
+            style={{ background:'rgba(248,113,113,0.15)', color:'#f87171' }}>หมด</span>}
           {!pkg.isActive && <span className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-            style={{ background: 'rgba(100,116,139,0.15)', color: '#64748b' }}>ปิด</span>}
+            style={{ background:'rgba(100,116,139,0.15)', color:'#64748b' }}>ปิด</span>}
         </div>
-        <p className="text-[10px] mt-0.5 font-mono" style={{ color: '#3a4a6a' }}>{pkg.sku}</p>
+        <p className="text-[10px] mt-0.5 font-mono" style={{ color:'#3a4a6a' }}>{pkg.sku}</p>
       </div>
       <div>
-        <p className="text-sm font-bold text-white">฿{formatPrice(pkg.effectivePrice)}</p>
-        {flashActive && <p className="text-[10px] line-through" style={{ color: '#64748b' }}>฿{formatPrice(pkg.price)}</p>}
+        <p className="text-sm font-bold text-white">฿{fp(pkg.effectivePrice)}</p>
+        {flash && <p className="text-[10px] line-through" style={{ color:'#64748b' }}>฿{fp(pkg.price)}</p>}
       </div>
-      <p className="text-sm" style={{ color: '#94a3b8' }}>฿{formatPrice(pkg.cost)}</p>
+      <p className="text-sm" style={{ color:'#94a3b8' }}>฿{fp(pkg.cost)}</p>
       <div>
-        <p className="text-sm font-semibold" style={{ color: pkg.profit >= 0 ? '#34d399' : '#f87171' }}>฿{formatPrice(pkg.profit)}</p>
-        {pkg.profitPercent !== null && <p className="text-[10px]" style={{ color: pkg.profit >= 0 ? '#34d39966' : '#f8717166' }}>{pkg.profitPercent}%</p>}
+        <p className="text-sm font-semibold" style={{ color:pkg.profit>=0?'#34d399':'#f87171' }}>฿{fp(pkg.profit)}</p>
+        {pkg.profitPercent!==null && <p className="text-[10px]" style={{ color:pkg.profit>=0?'#34d39966':'#f8717166' }}>{pkg.profitPercent}%</p>}
       </div>
       <div>
         {pkg.quota.limit !== null ? (
           <>
             <div className="flex items-center gap-1.5 mb-1">
               <span className="text-xs font-semibold text-white">{pkg.quota.sold}</span>
-              <span className="text-[10px]" style={{ color: '#64748b' }}>/ {pkg.quota.limit}</span>
+              <span className="text-[10px]" style={{ color:'#64748b' }}>/ {pkg.quota.limit}</span>
             </div>
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: '#1c2540', width: 60 }}>
-              <div className="h-full rounded-full" style={{ width: `${Math.min(100,(pkg.quota.sold/pkg.quota.limit!)*100)}%`, background: isSoldOut ? '#f87171' : '#38bdf8' }} />
+            <div className="h-1 rounded-full overflow-hidden" style={{ background:'#1c2540', width:60 }}>
+              <div className="h-full rounded-full" style={{ width:`${Math.min(100,(pkg.quota.sold/pkg.quota.limit!)*100)}%`, background:sold?'#f87171':'#38bdf8' }} />
             </div>
           </>
-        ) : <span className="text-[11px]" style={{ color: '#3a4a6a' }}>ไม่จำกัด</span>}
+        ) : <span className="text-[11px]" style={{ color:'#3a4a6a' }}>ไม่จำกัด</span>}
       </div>
       <div className="flex items-center justify-end gap-1.5">
-        <button onClick={() => onEdit(pkg)} className="p-1.5 rounded-lg hover:bg-white/10 transition" style={{ color: '#64748b' }}><Pencil size={13} /></button>
-        <button onClick={() => onDelete(pkg)} className="p-1.5 rounded-lg hover:bg-red-500/10 transition" style={{ color: '#64748b' }}><Trash2 size={13} /></button>
+        <button onClick={onEdit} className="p-1.5 rounded-lg hover:bg-white/10" style={{ color:'#64748b' }}><Pencil size={13}/></button>
+        <button onClick={onDelete} className="p-1.5 rounded-lg hover:bg-red-500/10" style={{ color:'#64748b' }}><Trash2 size={13}/></button>
       </div>
     </div>
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PackagesAdminPage() {
   const { token }  = useAdminAuth();
   const params     = useParams();
   const router     = useRouter();
   const gameId     = params.gameId as string;
-
   const [game, setGame]           = useState<Game | null>(null);
   const [packages, setPackages]   = useState<GamePackage[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -357,8 +364,8 @@ export default function PackagesAdminPage() {
     setLoading(true);
     try {
       const [pkgRes, gameRes] = await Promise.all([
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/games/${gameId}`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages`, { headers: { Authorization:`Bearer ${token}` } }),
+        axios.get(`${process.env.NEXT_PUBLIC_API_URL}/games/${gameId}`, { headers: { Authorization:`Bearer ${token}` } }),
       ]);
       setPackages(pkgRes.data?.data ?? []);
       setGame(gameRes.data?.data ?? null);
@@ -370,73 +377,99 @@ export default function PackagesAdminPage() {
   const activeCount  = packages.filter(p => p.isActive).length;
   const flashCount   = packages.filter(p => p.flashSale.isActive).length;
   const soldOutCount = packages.filter(p => p.quota.isSoldOut).length;
-  const avgProfit    = packages.length > 0 ? packages.reduce((s, p) => s + p.profit, 0) / packages.length : 0;
+  const avgProfit    = packages.length > 0 ? packages.reduce((s,p) => s+p.profit, 0)/packages.length : 0;
 
   return (
-    <div className="p-5 space-y-5" style={{ fontFamily: "'Noto Sans Thai',sans-serif", background: '#080a16', minHeight: '100vh' }}>
+    <div className="p-3 sm:p-5 space-y-4" style={{ fontFamily:"'Noto Sans Thai',sans-serif", background:'#080a16', minHeight:'100vh' }}>
 
       {showAdd   && <PackageFormModal gameId={gameId} token={token!} onClose={() => setShowAdd(false)} onSuccess={fetchData} />}
       {editPkg   && <PackageFormModal gameId={gameId} token={token!} pkg={editPkg} onClose={() => setEditPkg(null)} onSuccess={fetchData} />}
       {deletePkg && <DeleteModal pkg={deletePkg} gameId={gameId} token={token!} onClose={() => setDeletePkg(null)} onSuccess={fetchData} />}
 
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.push('/admin/games')} className="p-2 rounded-xl hover:bg-white/10 transition" style={{ color: '#64748b' }}>
-            <ArrowLeft size={18} />
+      {/* Header */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <button onClick={() => router.push('/admin/games')}
+            className="p-2 rounded-xl hover:bg-white/10 transition flex-shrink-0" style={{ color:'#64748b' }}>
+            <ArrowLeft size={16} />
           </button>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
-              {game?.image && <img src={game.image} alt={game.name} className="w-8 h-8 rounded-lg object-cover" />}
-              <h1 className="text-xl font-bold text-white">{game?.name ?? 'เกม'}</h1>
+              {game?.image && <img src={game.image} alt={game.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />}
+              <h1 className="text-base font-bold text-white truncate">{game?.name ?? 'เกม'}</h1>
             </div>
-            <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>จัดการแพ็กเกจเติมเงิน</p>
+            <p className="text-[10px]" style={{ color:'#64748b' }}>จัดการแพ็กเกจเติมเงิน</p>
           </div>
         </div>
         <button onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-          style={{ background: 'linear-gradient(135deg,#38bdf8,#818cf8)' }}>
-          <Plus size={15} /> เพิ่มแพ็กเกจ
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0"
+          style={{ background:'linear-gradient(135deg,#38bdf8,#818cf8)' }}>
+          <Plus size={14} />
+          <span className="hidden sm:inline">เพิ่มแพ็กเกจ</span>
+          <span className="sm:hidden">เพิ่ม</span>
         </button>
       </div>
 
+      {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'แพ็กเกจทั้งหมด', value: packages.length,              color: '#38bdf8', icon: Package     },
-          { label: 'เปิดใช้งาน',     value: activeCount,                  color: '#34d399', icon: CheckCircle },
-          { label: 'Flash Sale',      value: flashCount,                   color: '#f59e0b', icon: Zap          },
-          { label: 'กำไรเฉลี่ย',     value: `฿${formatPrice(avgProfit)}`, color: '#818cf8', icon: TrendingUp  },
-        ].map(({ label, value, color, icon: Icon }) => (
-          <div key={label} className="rounded-2xl p-4" style={cardBg}>
-            <div className="flex items-center gap-2 mb-1"><Icon size={13} style={{ color }} /><p className="text-[11px]" style={{ color: '#64748b' }}>{label}</p></div>
-            <p className="text-xl font-bold text-white">{value}</p>
+          { label:'แพ็กเกจทั้งหมด', value:packages.length,        color:'#38bdf8', icon:Package     },
+          { label:'เปิดใช้งาน',     value:activeCount,            color:'#34d399', icon:CheckCircle },
+          { label:'Flash Sale',      value:flashCount,             color:'#f59e0b', icon:Zap          },
+          { label:'กำไรเฉลี่ย',     value:`฿${fp(avgProfit)}`,   color:'#818cf8', icon:TrendingUp  },
+        ].map(({ label, value, color, icon:Icon }) => (
+          <div key={label} className="rounded-2xl p-3 sm:p-4" style={cardBg}>
+            <div className="flex items-center gap-1.5 mb-1"><Icon size={12} style={{ color }} /><p className="text-[10px]" style={{ color:'#64748b' }}>{label}</p></div>
+            <p className="text-lg font-bold text-white">{value}</p>
           </div>
         ))}
       </div>
 
-      <div className="rounded-2xl overflow-hidden" style={cardBg}>
-        <div className="grid text-[11px] font-bold px-5 py-3 gap-4"
-          style={{ gridTemplateColumns: '2.5fr 1fr 1fr 1fr 1fr 80px', color: '#64748b', borderBottom: '1px solid #1c2540' }}>
-          <span>แพ็กเกจ / SKU</span><span>ราคาขาย</span><span>ต้นทุน</span><span>กำไร</span><span>Quota</span><span className="text-right">จัดการ</span>
+      {/* Mobile: Cards / Desktop: Table */}
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({length:4}).map((_,i) => (
+            <div key={i} className="rounded-2xl p-4 animate-pulse" style={cardBg}>
+              <div className="h-4 w-32 rounded mb-2" style={{ background:'#1c2540' }} />
+              <div className="grid grid-cols-3 gap-2">
+                {[1,2,3].map(j => <div key={j} className="h-10 rounded-xl" style={{ background:'#1c2540' }} />)}
+              </div>
+            </div>
+          ))}
         </div>
-        {loading ? (
-          <div className="flex items-center justify-center py-16">
-            <div className="w-6 h-6 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+      ) : packages.length === 0 ? (
+        <div className="text-center py-16 space-y-2">
+          <Package size={32} className="mx-auto" style={{ color:'#1c2540' }} />
+          <p className="text-gray-500 text-sm">ยังไม่มีแพ็กเกจ</p>
+        </div>
+      ) : (
+        <>
+          {/* Mobile */}
+          <div className="sm:hidden space-y-2">
+            {packages.map(pkg => (
+              <PackageCard key={pkg.id} pkg={pkg}
+                onEdit={() => setEditPkg(pkg)}
+                onDelete={() => setDeletePkg(pkg)} />
+            ))}
           </div>
-        ) : packages.length === 0 ? (
-          <div className="text-center py-16 space-y-2">
-            <Package size={32} className="mx-auto" style={{ color: '#1c2540' }} />
-            <p className="text-gray-500 text-sm">ยังไม่มีแพ็กเกจ</p>
+          {/* Desktop */}
+          <div className="hidden sm:block rounded-2xl overflow-hidden" style={cardBg}>
+            <div className="grid text-[11px] font-bold px-5 py-3 gap-4"
+              style={{ gridTemplateColumns:'2.5fr 1fr 1fr 1fr 1fr 80px', color:'#64748b', borderBottom:'1px solid #1c2540' }}>
+              <span>แพ็กเกจ / SKU</span><span>ราคาขาย</span><span>ต้นทุน</span><span>กำไร</span><span>Quota</span><span className="text-right">จัดการ</span>
+            </div>
+            {packages.map(pkg => (
+              <PackageRow key={pkg.id} pkg={pkg} onEdit={() => setEditPkg(pkg)} onDelete={() => setDeletePkg(pkg)} />
+            ))}
           </div>
-        ) : packages.map(pkg => (
-          <PackageRow key={pkg.id} pkg={pkg} onEdit={setEditPkg} onDelete={setDeletePkg} />
-        ))}
-      </div>
+        </>
+      )}
 
       {soldOutCount > 0 && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl"
-          style={{ background: 'rgba(248,113,113,0.08)', border: '1px solid rgba(248,113,113,0.2)' }}>
-          <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-          <p className="text-xs text-red-400">มี {soldOutCount} แพ็กเกจที่ขายหมดแล้ว กรุณาอัปเดต Quota หรือปิดแพ็กเกจ</p>
+          style={{ background:'rgba(248,113,113,0.08)', border:'1px solid rgba(248,113,113,0.2)' }}>
+          <AlertCircle size={13} className="text-red-400 flex-shrink-0" />
+          <p className="text-xs text-red-400">มี {soldOutCount} แพ็กเกจที่ขายหมดแล้ว</p>
         </div>
       )}
     </div>

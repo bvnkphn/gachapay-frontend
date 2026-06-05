@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/bottom-nav";
 import { AccountSidebar } from "@/components/AccountSidebar";
 import { LanguageProvider } from "@/components/language-context";
+import { MainWrapper } from "@/components/MainWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,7 +27,7 @@ export default function RootLayout({
                     <Providers>
                         <Header />
                         <AccountSidebar />
-                        <main className="pt-16">{children}</main>
+                        <MainWrapper>{children}</MainWrapper>
                         <BottomNav />
                     </Providers>
                 </LanguageProvider>

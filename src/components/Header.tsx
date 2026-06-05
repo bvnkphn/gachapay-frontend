@@ -30,6 +30,9 @@ export function Header() {
         { path: "/support", label: t.headerSupport },
     ];
 
+    // ซ่อน Header ของ user เมื่ออยู่ในหน้า admin
+    if (pathname.startsWith("/admin")) return null;
+
     // pages that have the account sidebar
     const hasSidebar = pathname.startsWith("/account") || pathname.startsWith("/support/tickets");
 
@@ -71,8 +74,6 @@ export function Header() {
                             </div>
                         </Link>
                     </div>
-
-
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-6">
