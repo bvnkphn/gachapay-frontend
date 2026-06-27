@@ -67,11 +67,15 @@ export default function LoginPage() {
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-8 pt-20">
-                    <div className="inline-flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-cyber flex items-center justify-center glow-primary">
-                            <Gamepad2 className="w-7 h-7 text-background" />
+                    <div className="inline-flex items-center gap-3 mb-4 select-none">
+                        {/* Glowing Icon Badge */}
+                        <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/15 border border-primary/30 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
+                            <Gamepad2 className="w-7 h-7 text-primary drop-shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
                         </div>
-                        <span className="text-3xl font-bold text-glow">CYBERPAY</span>
+                        {/* Text Logo */}
+                        <span className="text-3xl font-black tracking-widest text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
+                            GACHA<span className="text-foreground dark:text-white drop-shadow-none">PAY</span>
+                        </span>
                     </div>
                     <p className="text-muted-foreground">{t.logoDesc}</p>
                 </div>

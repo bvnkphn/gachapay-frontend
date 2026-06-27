@@ -53,7 +53,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
           <Zap size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-sm font-extrabold text-white tracking-wide">CYBERPAY</p>
+          <p className="text-sm font-extrabold text-white tracking-wide">GACHAPAY</p>
           <p className="text-[9px]" style={{ color: "#3a4a6a" }}>Super Admin</p>
         </div>
       </div>

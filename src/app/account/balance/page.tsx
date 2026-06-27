@@ -170,7 +170,7 @@ function PaymentFlowModal({
         <div className={overlay}>
             <div className={card}>
                 <div className="px-8 py-10 flex flex-col items-center text-center">
-                    <div className="text-2xl font-extrabold text-white mb-0.5">CYBERPAY</div>
+                    <div className="text-2xl font-extrabold text-white mb-0.5">GACHAPAY</div>
                     <div className="text-xs text-white/40 mb-8">Game Top-up Platform</div>
                     <div className="relative w-16 h-16 mb-6">
                         <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary border-l-yellow-400 animate-spin" />
