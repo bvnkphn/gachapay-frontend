@@ -283,9 +283,8 @@ export function Header() {
                         ) : (
                             <Link href="/login">
                                 <Button
-                                    variant="outline"
                                     size="sm"
-                                    className="bg-foreground text-background border-0 hover:bg-foreground/90 text-xs h-8 px-4 font-semibold shadow-sm transition-all"
+                                    className="bg-foreground text-background border-0 hover:bg-foreground/90 hover:text-background text-xs h-8 px-4 font-semibold shadow-sm transition-all"
                                 >
                                     <LogIn className="w-3.5 h-3.5 mr-1.5" />
                                     เข้าสู่ระบบ

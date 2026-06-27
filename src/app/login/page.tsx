@@ -72,15 +72,13 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center px-4 relative">
             {/* Theme Toggle Button */}
             <div className="fixed top-4 right-4 z-50">
-                <Button
-                    variant="outline"
-                    size="icon"
+                <button
                     type="button"
-                    className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-md border-primary/20 hover:border-primary/40 text-foreground transition-all duration-300 shadow-md shadow-primary/5"
+                    className="w-9 h-9 flex items-center justify-center rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-300 shadow-lg"
                     onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
                 >
-                    {currentTheme === "dark" ? <Sun className="w-4 h-4 text-primary animate-pulse" /> : <Moon className="w-4 h-4 text-secondary" />}
-                </Button>
+                    {currentTheme === "dark" ? <Sun className="w-4 h-4 text-background" /> : <Moon className="w-4 h-4 text-background" />}
+                </button>
             </div>
 
             <div className="w-full max-w-md">
