@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { Zap, ArrowRight, Star, ChevronRight, ChevronLeft } from "lucide-react";
 import { GamesSection } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
+import { api } from "@/lib/api";
 import BannerSlider from "@/components/BannerSlider";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -252,8 +253,19 @@ export default function Home() {
     const [loadingGames, setLoadingGames] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
     const [visibleGamesCount, setVisibleGamesCount] = useState(12);
+    const [totalSuccess, setTotalSuccess] = useState(0);
 
     const flashGames = games.slice(0, 10);
+
+    useEffect(() => {
+        api.getPublicStats()
+            .then((res) => {
+                if (res && typeof res.total_success === "number") {
+                    setTotalSuccess(res.total_success);
+                }
+            })
+            .catch((err) => console.error("Failed to load public stats:", err));
+    }, []);
 
     useEffect(() => {
         setVisibleGamesCount(12);
@@ -481,11 +493,10 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-5">
                     <div>
                         <h2 className="text-lg font-bold text-foreground">รีวิวจากผู้ใช้บริการ</h2>
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mt-1">
-                            <p className="text-xs text-muted-foreground">ความประทับใจจากผู้ใช้บริการ</p>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mt-1.5">
                             <span className="w-fit inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-success/15 text-success border border-success/30 uppercase tracking-wider shadow-[0_0_8px_rgba(34,197,94,0.15)]">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                                เติมสำเร็จแล้วกว่า 12,850 รายการ
+                                เติมสำเร็จแล้วกว่า {totalSuccess.toLocaleString()} รายการ
                             </span>
                         </div>
                     </div>

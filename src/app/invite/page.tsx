@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 export default function AccountInvitePage() {
     const { user } = useAuth();
@@ -14,11 +15,17 @@ export default function AccountInvitePage() {
     const [copied, setCopied] = useState(false);
     const [referrals, setReferrals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [hasPurchased, setHasPurchased] = useState(false);
+    const [referredBy, setReferredBy] = useState<any>(null);
+    const [referrerInput, setReferrerInput] = useState("");
+    const [submittingReferrer, setSubmittingReferrer] = useState(false);
 
     useEffect(() => {
         api.getReferrals()
             .then((data) => {
-                setReferrals(data || []);
+                setReferrals(data.referrals || []);
+                setHasPurchased(data.hasPurchased || false);
+                setReferredBy(data.referredBy || null);
             })
             .catch((err) => {
                 console.error("Failed to load referrals:", err);
@@ -27,6 +34,27 @@ export default function AccountInvitePage() {
                 setLoading(false);
             });
     }, []);
+
+    const handleSaveReferrer = async () => {
+        if (!referrerInput.trim()) {
+            toast.error("กรุณากรอกรหัสแนะนำเพื่อน");
+            return;
+        }
+        setSubmittingReferrer(true);
+        try {
+            await api.setReferrer(referrerInput.trim());
+            toast.success("บันทึกผู้แนะนำสำเร็จ!");
+            const updated = await api.getReferrals();
+            setReferrals(updated.referrals || []);
+            setHasPurchased(updated.hasPurchased || false);
+            setReferredBy(updated.referredBy || null);
+            setReferrerInput("");
+        } catch (error: any) {
+            toast.error(error.message || "เกิดข้อผิดพลาดในการบันทึกรหัสผู้แนะนำ");
+        } finally {
+            setSubmittingReferrer(false);
+        }
+    };
 
     const referralLink = useMemo(() => {
         if (!user?.id) return "";
@@ -142,6 +170,65 @@ export default function AccountInvitePage() {
                                 * ได้รับเหรียญโบนัสจากเพื่อนที่ช้อปปิ้งสำเร็จสูงสุดไม่เกิน 10 คนแรก
                             </p>
                         </div>
+                    </div>
+
+                    {/* Referrer Input Card (Business Logic Lock) */}
+                    <div className="glass-card rounded-3xl border border-border/50 p-6 md:p-8 space-y-4">
+                        <div className="flex items-start gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 text-primary flex items-center justify-center shrink-0">
+                                <Gift className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">ระบุผู้แนะนำเพื่อน</p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    หากเพื่อนของคุณแนะนำมา สามารถกรอกรหัสหรือลิงก์ผู้แนะนำย้อนหลังที่นี่ได้ (กรอกได้ก่อนการทำรายการซื้อสินค้า/เติมเงินครั้งแรกเท่านั้น)
+                                </p>
+                            </div>
+                        </div>
+
+                        {referredBy ? (
+                            /* Case 3: Already filled/referred */
+                            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว</p>
+                                    <p className="text-sm font-semibold text-emerald-500">{referredBy.email}</p>
+                                </div>
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-fit">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    บันทึกแล้ว
+                                </span>
+                            </div>
+                        ) : hasPurchased ? (
+                            /* Case 2: No referrer, but already purchased -> Locked */
+                            <div className="bg-muted/40 border border-border/40 rounded-2xl p-4">
+                                <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                                    ⚠️ ไม่สามารถระบุผู้แนะนำย้อนหลังได้แล้ว เนื่องจากคุณได้ทำรายการซื้อสินค้าหรือเติมเงินครั้งแรกสำเร็จแล้ว
+                                </p>
+                            </div>
+                        ) : (
+                            /* Case 1: No purchase yet, no referrer -> Input enabled */
+                            <div className="space-y-3">
+                                <div className="flex gap-2">
+                                    <Input
+                                        placeholder="วางลิงก์เชิญเพื่อน หรือกรอกรหัสแนะนำเพื่อน"
+                                        value={referrerInput}
+                                        onChange={(e) => setReferrerInput(e.target.value)}
+                                        className="bg-muted/30 border-border/50 text-xs h-11 focus-visible:ring-primary"
+                                        disabled={submittingReferrer}
+                                    />
+                                    <Button
+                                        onClick={handleSaveReferrer}
+                                        disabled={submittingReferrer || !referrerInput.trim()}
+                                        className="h-11 bg-primary text-primary-foreground font-bold px-6 rounded-xl hover:opacity-90 active:scale-95 transition-all shrink-0 cursor-pointer"
+                                    >
+                                        {submittingReferrer ? "กำลังบันทึก..." : "ยืนยัน"}
+                                    </Button>
+                                </div>
+                                <p className="text-[10px] text-muted-foreground/75">
+                                    * สามารถป้อนรหัส เช่น "12" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {/* Stats Dashboard */}

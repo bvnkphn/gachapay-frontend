@@ -57,6 +57,14 @@ export const api = {
 
     getReferrals: () => apiRequest("/users/me/referrals"),
 
+    setReferrer: (referrerCode: string) =>
+        apiRequest("/users/me/referred-by", {
+            method: "POST",
+            body: JSON.stringify({ referrerCode }),
+        }),
+
+    getPublicStats: () => apiRequest("/orders/public/stats"),
+
     login: (data: { email: string; password: string }) =>
         apiRequest("/auth/login", {
             method: "POST",
