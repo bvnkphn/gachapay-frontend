@@ -16,7 +16,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     {children}
                 </SidebarProvider>
                 <Toaster
-                    position="top-center"
+                    position="bottom-right"
                     toastOptions={{
                         style: {
                             background: 'var(--card)',
