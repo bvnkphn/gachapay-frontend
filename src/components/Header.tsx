@@ -418,7 +418,7 @@ export function Header() {
                                 </form>
 
                                 {/* Desktop Suggestions Dropdown */}
-                                {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && searchHistory.length > 0)) && (
+                                {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && !!user && searchHistory.length > 0)) && (
                                     <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
                                         <div className="py-1">
                                             {suggestions.length > 0 ? (
@@ -485,7 +485,8 @@ export function Header() {
                                 )}
                             </div>
 
-                            {/* Bookmark Button */}
+                            {/* Bookmark Button — only for logged-in users */}
+                            {user && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
@@ -529,6 +530,7 @@ export function Header() {
                                     )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
                         </div>
 
                         {/* ── RIGHT: Coin + User ── */}
@@ -538,7 +540,8 @@ export function Header() {
                                 <Search className="w-4 h-4" />
                             </Button>
 
-                            {/* Mobile bookmark icon */}
+                            {/* Mobile bookmark — only for logged-in users */}
+                            {user && (
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="sm:hidden hover:bg-muted w-8 h-8 cursor-pointer relative shrink-0">
@@ -577,6 +580,7 @@ export function Header() {
                                     )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                            )}
 
                             {/* Coin balance — show when logged in */}
                             {user && (
@@ -753,7 +757,7 @@ export function Header() {
                             </form>
 
                             {/* Mobile Suggestions Dropdown */}
-                            {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && searchHistory.length > 0)) && (
+                            {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && !!user && searchHistory.length > 0)) && (
                                 <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
                                     <div className="py-1">
                                         {suggestions.length > 0 ? (
