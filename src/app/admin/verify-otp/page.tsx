@@ -37,7 +37,7 @@ function VerifyAdminOtpContent() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md">
 
         {/* Logo */}
@@ -46,32 +46,32 @@ function VerifyAdminOtpContent() {
             <Gamepad2 className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-2xl font-bold">
-            <span className="text-white">GameTopUp </span>
+            <span className="text-foreground">GameTopUp </span>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">Admin</span>
           </h1>
         </div>
 
         {/* Card */}
-        <div className="bg-[#1a1a2e] rounded-2xl p-8 shadow-xl border border-white/5">
+        <div className="bg-card rounded-2xl p-8 shadow-xl border border-border/80">
           <div className="flex justify-center mb-4">
             <div className="w-12 h-12 rounded-full bg-cyan-500/10 flex items-center justify-center">
               <ShieldCheck className="w-6 h-6 text-cyan-400" />
             </div>
           </div>
 
-          <h2 className="text-xl font-bold text-white text-center mb-1">ยืนยัน OTP</h2>
-          <p className="text-gray-400 text-sm text-center mb-6">
+          <h2 className="text-xl font-bold text-foreground text-center mb-1">ยืนยัน OTP</h2>
+          <p className="text-muted-foreground text-sm text-center mb-6">
             กรุณาตรวจสอบ OTP ที่ส่งไปยัง Email ของคุณ
           </p>
 
           <form onSubmit={handleVerify} className="space-y-4">
             <div>
-              <label className="text-gray-300 text-sm mb-1.5 block">รหัส OTP</label>
+              <label className="text-muted-foreground text-sm mb-1.5 block">รหัส OTP</label>
               <input
                 type="text"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="w-full bg-[#0f0f1a] text-white px-4 py-3 rounded-xl border border-white/10 focus:outline-none focus:border-cyan-500 transition text-center text-2xl tracking-widest placeholder:text-gray-600"
+                className="w-full bg-muted/20 text-foreground px-4 py-3 rounded-xl border border-border/80 focus:outline-none focus:border-cyan-500 transition text-center text-2xl tracking-widest placeholder:text-muted-foreground/30"
                 placeholder="000000"
                 maxLength={6}
                 required
@@ -93,14 +93,14 @@ function VerifyAdminOtpContent() {
             <button
               type="button"
               onClick={() => router.push('/login')}
-              className="w-full text-gray-400 hover:text-white text-sm text-center transition"
+              className="w-full text-muted-foreground hover:text-foreground text-sm text-center transition"
             >
               กลับหน้า Login
             </button>
           </form>
 
           {/* Dev OTP Simulator Controller */}
-          <div className="w-full mt-6 pt-4 border-t border-white/5">
+          <div className="w-full mt-6 pt-4 border-t border-border/80">
             <button
               type="button"
               onClick={async () => {
