@@ -160,9 +160,9 @@ export default function GameTopupPage() {
                     setSuccess(true);
                     setOrderId(currentOrderId);
                     window.dispatchEvent(new Event("balance-changed"));
-                    setTimeout(() => {
-                        router.push(`/history/${currentOrderId}`);
-                    }, 2000);
+                        setTimeout(() => {
+                            router.push(`/history`);
+                        }, 2000);
                 }
             } catch (err) {
                 console.error("Checking status fail:", err);
@@ -271,7 +271,7 @@ export default function GameTopupPage() {
                         window.dispatchEvent(new Event("balance-changed"));
 
                         setTimeout(() => {
-                            router.push(`/history/${createdOrderId}`);
+                            router.push(`/history`);
                         }, 2000);
                     } else {
                         throw new Error(payResult.message || "การชำระเงินด้วยคอยน์สะสมล้มเหลว");
@@ -695,18 +695,21 @@ export default function GameTopupPage() {
             {/* Warning Modal */}
             {showWarningModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center">
+                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center relative">
+                        <button
+                            onClick={() => setShowWarningModal(false)}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            aria-label="Close"
+                        >
+                            <X className="w-4.5 h-4.5" />
+                        </button>
+
                         <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 text-amber-500">
                             <AlertTriangle className="w-6 h-6" />
                         </div>
                         <h3 className="text-lg font-bold text-foreground mb-2">แจ้งเตือน (Warning)</h3>
                         <p className="text-sm text-muted-foreground mb-6 whitespace-pre-line leading-relaxed">{warningText}</p>
-                        <Button 
-                            onClick={() => setShowWarningModal(false)}
-                            className="w-full font-semibold cursor-pointer rounded-xl"
-                        >
-                            ตกลง (OK)
-                        </Button>
+                        {/* Removed OK button per UX request; close via X in top-right */}
                     </div>
                 </div>
             )}
@@ -786,7 +789,15 @@ export default function GameTopupPage() {
             {/* Success Popup Modal */}
             {success && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center">
+                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center relative">
+                        <button
+                            onClick={() => setSuccess(false)}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            aria-label="Close"
+                        >
+                            <X className="w-4.5 h-4.5" />
+                        </button>
+
                         <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 text-emerald-500">
                             <CheckCircle2 className="w-10 h-10" />
                         </div>
@@ -799,7 +810,7 @@ export default function GameTopupPage() {
                         </div>
                         <Button 
                             onClick={() => {
-                                router.push(`/history/${orderId}`);
+                                router.push(`/history`);
                             }}
                             className="w-full font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors cursor-pointer"
                         >

@@ -92,12 +92,38 @@ function VerifyAdminOtpContent() {
 
             <button
               type="button"
-              onClick={() => router.push('/admin/login-admin')}
+              onClick={() => router.push('/login')}
               className="w-full text-gray-400 hover:text-white text-sm text-center transition"
             >
               กลับหน้า Login
             </button>
           </form>
+
+          {/* Dev OTP Simulator Controller */}
+          <div className="w-full mt-6 pt-4 border-t border-white/5">
+            <button
+              type="button"
+              onClick={async () => {
+                setLoading(true);
+                setError('');
+                try {
+                  const res = await axios.post(
+                    `${process.env.NEXT_PUBLIC_API_URL}/auth/verify-admin-otp`,
+                    { userId, otp: '999999' }
+                  );
+                  setAuth(res.data.user, res.data.token);
+                  router.push('/admin');
+                } catch (err) {
+                  setError('OTP Bypass ล้มเหลว');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              className="w-full py-2.5 rounded-xl border border-dashed border-yellow-500/30 hover:border-yellow-500/60 bg-yellow-500/5 hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+            >
+              🛠️ เข้าสู่ระบบแอดมินทันที (Dev Bypass: 999999)
+            </button>
+          </div>
         </div>
       </div>
     </div>

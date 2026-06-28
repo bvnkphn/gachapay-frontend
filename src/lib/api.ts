@@ -105,6 +105,8 @@ export const api = {
     getLoyalty: () => apiRequest("/users/me/loyalty"),
     getWalletBalance: () => apiRequest("/wallets/me/balance"),
     getRecentOrders: () => apiRequest("/orders/me/recent"),
+    deleteAccount: (data: { confirmPhrase: string; password: string }) =>
+        apiRequest("/users/me", { method: "DELETE", body: JSON.stringify(data) }),
 
     // Topup
     getTopupMethods: () => apiRequest("/topup/methods"),
@@ -123,10 +125,45 @@ export const api = {
         apiRequest(`/topup/${referenceId}/cancel`, { method: "PATCH" }),
     claimGachaReward: (amount: number) =>
         apiRequest("/wallets/me/gacha-claim", { method: "POST", body: JSON.stringify({ amount }) }),
+    recordGachaSpin: (data: { prizeAmount: number; prizeLabel?: string; won?: boolean; orderId?: number | null }) =>
+        apiRequest("/wallets/me/gacha-spin", { method: "POST", body: JSON.stringify(data) }),
+    getGachaSpins: (params?: { limit?: number; offset?: number }) => {
+        const q = new URLSearchParams();
+        if (params?.limit !== undefined) q.set("limit", String(params.limit));
+        if (params?.offset !== undefined) q.set("offset", String(params.offset));
+        return apiRequest(`/users/me/gacha-spins?${q.toString()}`);
+    },
     processWalletPayment: (data: { orderId: number; amount: number; paymentMethod: string }) =>
         apiRequest("/payments/process-wallet-payment", { method: "POST", body: JSON.stringify(data) }),
     generateQRCode: (data: { orderId: number; amount: number; method: "promptpay" | "truemoney" }) =>
         apiRequest("/payments/generate-qr", { method: "POST", body: JSON.stringify(data) }),
     checkPaymentStatus: (orderId: string) =>
         apiRequest(`/payments/check-status?orderId=${orderId}`),
+
+    // Slip upload (multipart/form-data — needs raw fetch, not JSON)
+    uploadSlip: async (file: File) => {
+        const token = localStorage.getItem("auth-storage");
+        const parsedToken = token ? JSON.parse(token).state.token : null;
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/upload/slip`,
+            {
+                method: "POST",
+                headers: parsedToken ? { Authorization: `Bearer ${parsedToken}` } : {},
+                body: formData,
+            }
+        );
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ message: "Upload failed" }));
+            throw new Error(error.message || `HTTP ${response.status}`);
+        }
+        return response.json();
+    },
+
+    submitSlip: (referenceId: string, slipUrl: string, bankCode?: string) =>
+        apiRequest(`/topup/${referenceId}/submit-slip`, {
+            method: "PATCH",
+            body: JSON.stringify({ slipUrl, bankCode }),
+        }),
 };

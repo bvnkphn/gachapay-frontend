@@ -3,12 +3,14 @@
 import { useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { toast } from "sonner";
 
 function AuthCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { setAuth } = useAuth();
+    const { setAuth: setAdminAuth } = useAdminAuth();
 
     useEffect(() => {
         const token = searchParams.get("token");
@@ -18,19 +20,31 @@ function AuthCallbackContent() {
             try {
                 const payload = JSON.parse(atob(token.split(".")[1]));
 
-                // Set auth with token
-                setAuth(
-                    {
-                        id: payload.sub,
-                        email: payload.email,
-                        name: payload.name,
-                        avatar: payload.avatar,
-                    },
-                    token
-                );
-
-                toast.success("เข้าสู่ระบบสำเร็จ");
-                router.push("/");
+                if (payload.role === "ADMIN") {
+                    setAdminAuth(
+                        {
+                            id: payload.sub,
+                            email: payload.email,
+                            role: payload.role,
+                        },
+                        token
+                    );
+                    toast.success("เข้าสู่ระบบผู้ดูแลระบบสำเร็จ");
+                    router.push("/admin");
+                } else {
+                    // Set auth with token
+                    setAuth(
+                        {
+                            id: payload.sub,
+                            email: payload.email,
+                            name: payload.name,
+                            avatar: payload.avatar,
+                        },
+                        token
+                    );
+                    toast.success("เข้าสู่ระบบสำเร็จ");
+                    router.push("/");
+                }
             } catch (error) {
                 toast.error("เข้าสู่ระบบไม่สำเร็จ");
                 router.push("/login");
@@ -39,7 +53,7 @@ function AuthCallbackContent() {
             toast.error("ไม่พบ token");
             router.push("/login");
         }
-    }, [searchParams, setAuth, router]);
+    }, [searchParams, setAuth, setAdminAuth, router]);
 
     return (
         <div className="min-h-screen flex items-center justify-center">

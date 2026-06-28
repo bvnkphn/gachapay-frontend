@@ -31,7 +31,7 @@ const BANKS = [
 const PAGE_SIZE = 4;
 const FEE = 0.0;
 
-type PayStep = "qr" | "processing" | "success" | "failed";
+type PayStep = "qr" | "processing" | "success" | "failed" | "awaiting_review";
 
 function PaymentFlowModal({
     method, amount, referenceId, onClose, onRetry, onSuccess, router, t, bankDetails,
@@ -44,13 +44,14 @@ function PaymentFlowModal({
     onSuccess?: () => void;
     router: ReturnType<typeof useRouter>;
     t: ReturnType<typeof useLanguage>["t"];
-    bankDetails?: { name: string; number: string; accName: string };
+    bankDetails?: { code: string; name: string; number: string; accName: string };
 }) {
     const [step, setStep] = useState<PayStep>("qr");
     const [countdown, setCountdown] = useState(109);
     const [copied, setCopied] = useState(false);
     const txId = referenceId ?? "1159351574";
     const [showAdminPanel, setShowAdminPanel] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const dateStr = new Date().toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "numeric" });
     const timeStr = new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
 
@@ -104,9 +105,21 @@ function PaymentFlowModal({
         }
     };
 
-    const handleSubmitSlip = () => {
+    const handleSubmitSlip = async () => {
         if (!selectedFile) return;
-        setStep("processing");
+        setUploading(true);
+        try {
+            // Step 1: Upload the slip image
+            const uploadResult = await api.uploadSlip(selectedFile);
+            // Step 2: Submit slip URL to link with the transaction
+            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+            // Step 3: Show awaiting review state
+            setStep("awaiting_review");
+        } catch (err: any) {
+            toast.error(err.message || "อัพโหลดสลิปล้มเหลว กรุณาลองใหม่");
+        } finally {
+            setUploading(false);
+        }
     };
 
     useEffect(() => {
@@ -354,10 +367,17 @@ function PaymentFlowModal({
                         {/* Confirmation Button */}
                         <button 
                             onClick={handleSubmitSlip}
-                            disabled={!selectedFile}
+                            disabled={!selectedFile || uploading}
                             className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 mb-3 transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            ยืนยันการโอนเงิน และอัปโหลดสลิป
+                            {uploading ? (
+                                <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    กำลังอัปโหลดสลิป...
+                                </>
+                            ) : (
+                                "ยืนยันการโอนเงิน และอัปโหลดสลิป"
+                            )}
                         </button>
                     </div>
 
@@ -386,6 +406,101 @@ function PaymentFlowModal({
             </div>
         );
     }
+
+    if (step === "awaiting_review") return (
+        <div className={overlay}>
+            <div className={card}>
+                <button 
+                    onClick={onClose} 
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                
+                <div className="flex flex-col items-center text-center py-6">
+                    {/* Animated Review Icon */}
+                    <div className="relative w-20 h-20 mb-5">
+                        <div className="absolute inset-0 rounded-full bg-yellow-500/10 animate-ping" style={{ animationDuration: "2s" }} />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                                <FileText className="w-7 h-7 text-white" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 className="text-lg font-extrabold text-foreground mb-1">
+                        ส่งสลิปเรียบร้อยแล้ว!
+                    </h3>
+                    <p className="text-xs text-muted-foreground mb-5 max-w-[280px]">
+                        สลิปของท่านได้รับการส่งเรียบร้อยแล้ว กรุณารอทีมงานตรวจสอบ<br />
+                        ระบบจะเติม Coin ให้อัตโนมัติหลังอนุมัติ
+                    </p>
+
+                    {/* Transaction Details */}
+                    <div className="w-full space-y-2 text-xs bg-muted/40 border border-border/30 rounded-xl p-3 mb-4">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">สถานะ</span>
+                            <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 font-bold text-[10px]">
+                                ⏳ รอตรวจสอบ
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ยอดเงินโอน</span>
+                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ธนาคาร</span>
+                            <span className="text-foreground font-semibold">{bankDetails?.name ?? "Bank Transfer"}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-border/20 pt-2">
+                            <span className="text-muted-foreground">เลขที่อ้างอิง</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">วันที่ส่ง</span>
+                            <span className="text-foreground">{dateStr} {timeStr}</span>
+                        </div>
+                    </div>
+
+                    {/* Info Box */}
+                    <div className="w-full flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 mb-4">
+                        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                        <div className="text-left">
+                            <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">ขั้นตอนถัดไป</p>
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                ทีมงานจะตรวจสอบสลิปภายใน 5-15 นาที หากข้อมูลถูกต้อง ระบบจะเติม Coin ให้อัตโนมัติ คุณสามารถตรวจสอบสถานะได้ที่หน้าประวัติการเติมเงิน
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <button 
+                        onClick={() => {
+                            onSuccess?.();
+                            onClose();
+                        }}
+                        className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md mb-2"
+                    >
+                        <History className="w-4 h-4" />
+                        ดูประวัติการเติมเงิน
+                    </button>
+                    <button 
+                        onClick={onClose}
+                        className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+                    >
+                        ปิด
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     if (step === "qr") return (
         <div className={overlay}>

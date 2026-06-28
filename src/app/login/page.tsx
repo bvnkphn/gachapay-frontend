@@ -12,12 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { useAdminAuth } from "@/hooks/use-admin-auth";
 import { useLanguage } from "@/components/language-context";
 import { useTheme } from "next-themes";
 
 export default function LoginPage() {
     const router = useRouter();
     const { setAuth } = useAuth();
+    const { setAuth: setAdminAuth } = useAdminAuth();
     const { lang, t, translateError } = useLanguage();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -50,9 +52,22 @@ export default function LoginPage() {
         setIsLoading(true);
         try {
             const response = await api.login({ email, password });
-            setAuth(response.user, response.token);
-            toast.success(t.success);
-            router.push("/");
+            
+            if (response.requireOtp) {
+                toast.success("กรุณากรอกรหัส OTP ที่ส่งไปยัง Email");
+                router.push(`/admin/verify-otp?userId=${response.userId}`);
+                return;
+            }
+
+            if (response.user && response.user.role === "ADMIN") {
+                setAdminAuth(response.user, response.token);
+                toast.success("เข้าสู่ระบบผู้ดูแลระบบสำเร็จ");
+                router.push("/admin");
+            } else {
+                setAuth(response.user, response.token);
+                toast.success(t.success);
+                router.push("/");
+            }
         } catch (error: any) {
             toast.error(translateError(error.message));
         } finally {

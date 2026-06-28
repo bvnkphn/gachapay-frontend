@@ -84,7 +84,7 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         <Link href="/" onClick={onNavClick}
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold"
           style={{ color: "#64748b" }}>← กลับหน้าเว็บ</Link>
-        <button onClick={() => { logout(); router.replace('/admin/login-admin'); }}
+        <button onClick={() => { logout(); router.replace('/'); }}
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-red-400 hover:text-red-300 transition">
           ✗ ออกจากระบบ
         </button>
@@ -136,12 +136,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, [menuOpen]);
   useEffect(() => {
     if (!_hydrated) return;
-    const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
-    if (!token && !isLoginPage) { router.replace('/admin/login-admin'); return; }
+    const isLoginPage = pathname === '/admin/verify-otp';
+    if (!token && !isLoginPage) { router.replace('/login'); return; }
     if (_hydrated && token && admin && admin.role !== 'ADMIN' && !isLoginPage) { router.replace('/'); }
   }, [token, pathname, _hydrated, admin]);
 
-  const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
+  const isLoginPage = pathname === '/admin/verify-otp';
   if (isLoginPage) return <>{children}</>;
 
   if (!_hydrated || !token) {

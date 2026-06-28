@@ -71,6 +71,8 @@ export function Header() {
     const [winningSegmentIndex, setWinningSegmentIndex] = useState(0);
     const [showPrizeClaimed, setShowPrizeClaimed] = useState(false);
     const [claimedPrizeText, setClaimedPrizeText] = useState("");
+    const [showSpinHistory, setShowSpinHistory] = useState(false);
+    const [spinHistoryData, setSpinHistoryData] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
 
     const fetchTopupsAndSpins = () => {
         if (user) {
@@ -80,6 +82,25 @@ export function Header() {
 
             const stored = localStorage.getItem(`gachapay_used_spins_${user.id}`);
             setUsedSpins(stored ? parseInt(stored, 10) : 0);
+        }
+    };
+
+    const fetchSpinHistory = () => {
+        if (user) {
+            api.getGachaSpins({ limit: 50 })
+                .then((d) => {
+                    // Map snake_case from backend to camelCase for frontend
+                    const mappedItems = (d?.items ?? []).map((item: any) => ({
+                        id: item.id,
+                        prizeAmount: item.prize_amount,
+                        prizeLabel: item.prize_label,
+                        won: item.won,
+                        createdAt: item.created_at,
+                        orderId: item.order_id,
+                    }));
+                    setSpinHistoryData({ items: mappedItems, total: d?.total ?? 0 });
+                })
+                .catch(() => setSpinHistoryData({ items: [], total: 0 }));
         }
     };
 
@@ -178,6 +199,17 @@ export function Header() {
         const newUsed = usedSpins + 1;
         setUsedSpins(newUsed);
         localStorage.setItem(`gachapay_used_spins_${user?.id}`, newUsed.toString());
+        // Record spin for auditing (won or not)
+        try {
+            await api.recordGachaSpin({
+                prizeAmount: prize.value ?? 0,
+                prizeLabel: prize.label ?? null,
+                won: (prize.value ?? 0) > 0,
+                orderId: null,
+            });
+        } catch (err) {
+            console.error("Failed to record gacha spin:", err);
+        }
         
         if (prize.value > 0) {
             setClaimedPrizeText(`ได้รับ ${prize.value} COINS!`);
@@ -477,7 +509,10 @@ export function Header() {
                                         {/* ออกจากระบบ (Logout) */}
                                         <DropdownMenuItem asChild>
                                             <button
-                                                onClick={logout}
+                                                onClick={() => {
+                                                    logout();
+                                                    router.push("/");
+                                                }}
                                                 className="w-[calc(100%-8px)] flex items-center gap-3 px-3 py-2.5 text-destructive cursor-pointer hover:bg-destructive/10 rounded-lg mx-1 text-left border-none bg-transparent"
                                             >
                                                 <LogOut className="w-4 h-4" />
@@ -701,6 +736,17 @@ export function Header() {
                                             style={{ width: `${(progressToNextSpin / 1000) * 100}%` }}
                                         />
                                     </div>
+                                    {/* View History Button */}
+                                    <button
+                                        onClick={() => {
+                                            fetchSpinHistory();
+                                            setShowSpinHistory(true);
+                                        }}
+                                        className="mt-4 text-xs text-primary hover:text-primary/80 font-semibold flex items-center justify-center gap-1.5 mx-auto transition-colors cursor-pointer"
+                                    >
+                                        <History className="w-3.5 h-3.5" />
+                                        ดูประวัติการสุ่ม
+                                    </button>
                                 </div>
                             </div>
                         ) : (
@@ -735,6 +781,116 @@ export function Header() {
                                 </Button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Spin History Modal */}
+            {showSpinHistory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-background rounded-2xl w-full max-w-lg shadow-2xl border border-border/40 overflow-hidden relative p-6 flex flex-col max-h-[80vh]">
+                        {/* Header */}
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-bold text-foreground">ประวัติการสุ่ม</h3>
+                                <p className="text-xs text-muted-foreground">ประวัติการหมุนวงล้อ Gacha Lucky Wheel</p>
+                            </div>
+                            <button
+                                onClick={() => setShowSpinHistory(false)}
+                                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="grid grid-cols-3 gap-3 mb-4">
+                            <div className="bg-muted/40 rounded-xl p-3 text-center border border-border/30">
+                                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">ทั้งหมด</p>
+                                <p className="text-lg font-bold text-foreground">{spinHistoryData.total}</p>
+                            </div>
+                            <div className="bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-500/20">
+                                <p className="text-[10px] text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">ชนะ</p>
+                                <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                                    {spinHistoryData.items.filter(s => s.won).length}
+                                </p>
+                            </div>
+                            <div className="bg-amber-500/10 rounded-xl p-3 text-center border border-amber-500/20">
+                                <p className="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider">รวม Coin</p>
+                                <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
+                                    {spinHistoryData.items.reduce((sum, s) => sum + (s.won ? parseFloat(s.prizeAmount) : 0), 0).toFixed(0)}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* History List */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar">
+                            {spinHistoryData.items.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <Sparkles className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                                    <p className="text-sm text-muted-foreground">ยังไม่มีประวัติการสุ่ม</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {spinHistoryData.items.map((spin, index) => (
+                                        <div
+                                            key={spin.id || index}
+                                            className={cn(
+                                                "flex items-center justify-between p-3 rounded-xl border transition-all",
+                                                spin.won
+                                                    ? "bg-emerald-500/5 border-emerald-500/20"
+                                                    : "bg-muted/30 border-border/30"
+                                            )}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className={cn(
+                                                    "w-10 h-10 rounded-full flex items-center justify-center",
+                                                    spin.won
+                                                        ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400"
+                                                        : "bg-muted/50 text-muted-foreground"
+                                                )}>
+                                                    {spin.won ? (
+                                                        <Coins className="w-5 h-5" />
+                                                    ) : (
+                                                        <Sparkles className="w-5 h-5 opacity-50" />
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-semibold text-foreground">
+                                                        {spin.won ? `+${parseFloat(spin.prizeAmount).toFixed(0)} COINS` : "เกลือ"}
+                                                    </p>
+                                                    <p className="text-[10px] text-muted-foreground">
+                                                        {new Date(spin.createdAt).toLocaleDateString('th-TH', {
+                                                            day: '2-digit',
+                                                            month: 'short',
+                                                            year: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className={cn(
+                                                "px-2 py-1 rounded-full text-[10px] font-bold",
+                                                spin.won
+                                                    ? "bg-emerald-500 text-white"
+                                                    : "bg-muted text-muted-foreground"
+                                            )}>
+                                                {spin.won ? "WIN" : "LOSE"}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowSpinHistory(false)}
+                            className="mt-4 w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-sm transition-all cursor-pointer"
+                        >
+                            ปิด
+                        </button>
                     </div>
                 </div>
             )}
