@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Zap, ArrowRight, Star, ChevronRight, ChevronLeft } from "lucide-react";
 import { GamesSection } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
