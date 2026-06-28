@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, User, LogOut, LogIn, Headphones, Star, Moon, Sun, Coins, Gamepad2, Wallet, ShoppingCart, Ticket, Crown, Users, History, Sparkles, X } from "lucide-react";
+import { Search, User, LogOut, LogIn, Headphones, Star, Moon, Sun, Coins, Gamepad2, Wallet, ShoppingCart, Ticket, Crown, Users, History, Sparkles, X, Clock, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
+import { toast } from "sonner";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -34,6 +35,78 @@ export function Header() {
     const [balance, setBalance] = useState<number>(0);
     const [allGames, setAllGames] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [searchHistory, setSearchHistory] = useState<string[]>([]);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            try {
+                const saved = localStorage.getItem("gachapay_search_history");
+                if (saved) {
+                    setSearchHistory(JSON.parse(saved));
+                }
+            } catch (e) {
+                console.error("Error loading search history:", e);
+            }
+        }
+    }, []);
+
+    const saveSearchQuery = (query: string) => {
+        const trimmed = query.trim();
+        if (!trimmed) return;
+        setSearchHistory(prev => {
+            const filtered = prev.filter(item => item.toLowerCase() !== trimmed.toLowerCase());
+            const newHistory = [trimmed, ...filtered].slice(0, 5);
+            localStorage.setItem("gachapay_search_history", JSON.stringify(newHistory));
+            return newHistory;
+        });
+    };
+
+    const clearHistory = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setSearchHistory([]);
+        localStorage.removeItem("gachapay_search_history");
+    };
+
+    const removeHistoryItem = (e: React.MouseEvent, itemToRemove: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setSearchHistory(prev => {
+            const newHistory = prev.filter(item => item !== itemToRemove);
+            localStorage.setItem("gachapay_search_history", JSON.stringify(newHistory));
+            return newHistory;
+        });
+    };
+
+    const [bookmarks, setBookmarks] = useState<any[]>([]);
+
+    const fetchBookmarks = () => {
+        if (typeof window !== "undefined") {
+            try {
+                const saved = localStorage.getItem("gachapay_bookmarked_games");
+                const bookmarkedSlugs = saved ? JSON.parse(saved) : [];
+                const matched = allGames.filter(g => bookmarkedSlugs.includes(g.slug));
+                setBookmarks(matched);
+            } catch (e) {
+                console.error("Error fetching bookmarks in Header:", e);
+            }
+        }
+    };
+
+    useEffect(() => {
+        fetchBookmarks();
+    }, [allGames]);
+
+    useEffect(() => {
+        const handleUpdate = () => {
+            fetchBookmarks();
+        };
+        window.addEventListener("gachapay_bookmarks_changed", handleUpdate);
+        return () => window.removeEventListener("gachapay_bookmarks_changed", handleUpdate);
+    }, [allGames]);
+
+    // Check if current page is a game page
+    const isGamePage = pathname?.startsWith('/game/');
 
     useEffect(() => {
         const fetchGames = async () => {
@@ -296,8 +369,10 @@ export function Header() {
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
+            saveSearchQuery(searchQuery.trim());
             router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
             setSearchQuery("");
+            setSearchOpen(false);
         }
     };
 
@@ -326,46 +401,134 @@ export function Header() {
                         </div>
 
                         {/* ── CENTER: Search bar ── */}
-                        <div className="flex-1 max-w-md hidden sm:block relative ml-6">
-                            <form onSubmit={handleSearch} className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-                                <input
-                                    ref={searchRef}
-                                    type="text"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    onFocus={() => setShowSuggestions(true)}
-                                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                                    placeholder="ค้นหาชื่อเกม"
-                                    className="w-full bg-muted/85 hover:bg-muted dark:bg-[#0c0d14] dark:hover:bg-[#121420] border border-border/80 hover:border-primary/50 focus:border-primary rounded-full pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all outline-none shadow-sm focus:shadow-[0_0_12px_rgba(6,182,212,0.15)]"
-                                />
-                            </form>
+                        <div className="flex-1 max-w-md hidden sm:flex items-center gap-2 ml-6">
+                            <div className="relative flex-1">
+                                <form onSubmit={handleSearch} className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                                    <input
+                                        ref={searchRef}
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onFocus={() => setShowSuggestions(true)}
+                                        onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                                        placeholder="ค้นหาชื่อเกม"
+                                        className="w-full bg-muted/85 hover:bg-muted dark:bg-[#0c0d14] dark:hover:bg-[#121420] border border-border/80 hover:border-primary/50 focus:border-primary rounded-full pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all outline-none shadow-sm focus:shadow-[0_0_12px_rgba(6,182,212,0.15)]"
+                                    />
+                                </form>
 
-                            {/* Desktop Suggestions Dropdown */}
-                            {showSuggestions && suggestions.length > 0 && (
-                                <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
-                                    <div className="py-1">
-                                        {suggestions.map((game) => (
-                                            <button
-                                                key={game.slug}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSearchQuery("");
-                                                    setShowSuggestions(false);
-                                                    router.push(`/game/${game.slug}`);
-                                                }}
-                                                className="w-full px-4 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center gap-3 transition-colors cursor-pointer"
-                                            >
-                                                <img src={game.image} alt={game.name} className="w-8 h-8 rounded-lg object-cover" />
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-foreground">{game.name}</span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase">{game.category}</span>
+                                {/* Desktop Suggestions Dropdown */}
+                                {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && searchHistory.length > 0)) && (
+                                    <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
+                                        <div className="py-1">
+                                            {suggestions.length > 0 ? (
+                                                suggestions.map((game) => (
+                                                    <button
+                                                        key={game.slug}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            saveSearchQuery(game.name);
+                                                            setSearchQuery("");
+                                                            setShowSuggestions(false);
+                                                            router.push(`/game/${game.slug}`);
+                                                        }}
+                                                        className="w-full px-4 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center gap-3 transition-colors cursor-pointer"
+                                                    >
+                                                        <img src={game.image} alt={game.name} className="w-8 h-8 rounded-lg object-cover" />
+                                                        <div className="flex flex-col">
+                                                            <span className="font-semibold text-foreground">{game.name}</span>
+                                                            <span className="text-[9px] text-muted-foreground uppercase">{game.category}</span>
+                                                        </div>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="p-2">
+                                                    <div className="flex items-center justify-between px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                        <span>ประวัติการค้นหาล่าสุด</span>
+                                                        <button
+                                                            onMouseDown={clearHistory}
+                                                            className="hover:text-primary transition-colors cursor-pointer normal-case"
+                                                        >
+                                                            ล้างทั้งหมด
+                                                        </button>
+                                                    </div>
+                                                    <div className="mt-1 space-y-0.5">
+                                                        {searchHistory.map((query) => (
+                                                            <div
+                                                                key={query}
+                                                                className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer"
+                                                                onClick={() => {
+                                                                    setSearchQuery(query);
+                                                                    saveSearchQuery(query);
+                                                                    setShowSuggestions(false);
+                                                                    router.push(`/search?q=${encodeURIComponent(query)}`);
+                                                                }}
+                                                            >
+                                                                <div className="flex items-center gap-2">
+                                                                    <History className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                                    <span>{query}</span>
+                                                                </div>
+                                                                <button
+                                                                    onMouseDown={(e) => removeHistoryItem(e, query)}
+                                                                    className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                                                                    title="ลบ"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
                                                 </div>
-                                            </button>
-                                        ))}
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                )}
+                            </div>
+
+                            {/* Bookmark Button */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className="w-8 h-8 rounded-full border border-border/80 hover:border-primary/50 bg-muted/85 hover:bg-muted dark:bg-[#0c0d14] dark:hover:bg-[#121420] text-muted-foreground hover:text-primary transition-all shrink-0 cursor-pointer relative shadow-sm"
+                                        title="เกมที่ปักหมุดไว้"
+                                    >
+                                        <Bookmark className="w-4 h-4" />
+                                        {bookmarks.length > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[8px] flex items-center justify-center font-bold">
+                                                {bookmarks.length}
+                                            </span>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 glass-card border-border/50 py-2">
+                                    <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                        เกมที่ปักหมุดไว้
+                                    </div>
+                                    <DropdownMenuSeparator className="my-1" />
+                                    {bookmarks.length > 0 ? (
+                                        bookmarks.map((game) => (
+                                            <DropdownMenuItem key={game.slug} asChild>
+                                                <Link
+                                                    href={`/game/${game.slug}`}
+                                                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg mx-1"
+                                                >
+                                                    <img src={game.image} alt={game.name} className="w-7 h-7 rounded-md object-cover" />
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-xs font-semibold text-foreground truncate">{game.name}</span>
+                                                        <span className="text-[8px] text-muted-foreground uppercase">{game.category}</span>
+                                                    </div>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                            ยังไม่มีเกมที่ปักหมุดไว้<br/>ปักหมุดที่หน้ารายละเอียดเกม
+                                        </div>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
 
                         {/* ── RIGHT: Coin + User ── */}
@@ -374,6 +537,46 @@ export function Header() {
                             <Button variant="ghost" size="icon" className="sm:hidden hover:bg-muted w-8 h-8 cursor-pointer" onClick={() => setSearchOpen(!searchOpen)}>
                                 <Search className="w-4 h-4" />
                             </Button>
+
+                            {/* Mobile bookmark icon */}
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="sm:hidden hover:bg-muted w-8 h-8 cursor-pointer relative shrink-0">
+                                        <Bookmark className="w-4 h-4" />
+                                        {bookmarks.length > 0 && (
+                                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[7px] flex items-center justify-center font-bold">
+                                                {bookmarks.length}
+                                            </span>
+                                        )}
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="w-56 glass-card border-border/50 py-2">
+                                    <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                        เกมที่ปักหมุดไว้
+                                    </div>
+                                    <DropdownMenuSeparator className="my-1" />
+                                    {bookmarks.length > 0 ? (
+                                        bookmarks.map((game) => (
+                                            <DropdownMenuItem key={game.slug} asChild>
+                                                <Link
+                                                    href={`/game/${game.slug}`}
+                                                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg mx-1"
+                                                >
+                                                    <img src={game.image} alt={game.name} className="w-7 h-7 rounded-md object-cover" />
+                                                    <div className="flex flex-col min-w-0">
+                                                        <span className="text-xs font-semibold text-foreground truncate">{game.name}</span>
+                                                        <span className="text-[8px] text-muted-foreground uppercase">{game.category}</span>
+                                                    </div>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        ))
+                                    ) : (
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                            ยังไม่มีเกมที่ปักหมุดไว้<br/>ปักหมุดที่หน้ารายละเอียดเกม
+                                        </div>
+                                    )}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
 
                             {/* Coin balance — show when logged in */}
                             {user && (
@@ -385,28 +588,6 @@ export function Header() {
                                     </div>
                                 </Link>
                             )}
-
-                            {/* Capsule Theme Switcher in Navbar */}
-                            <div
-                                className="relative flex items-center w-[72px] h-8 bg-muted/40 dark:bg-[#090a0f] border border-border/40 rounded-full p-1 cursor-pointer select-none transition-all duration-300 shrink-0 hover:scale-105 active:scale-95 shadow-sm ml-1"
-                                onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-                            >
-                                {/* Sliding active pill indicator */}
-                                <div
-                                    className={cn(
-                                        "absolute top-0.5 bottom-0.5 w-7 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
-                                        currentTheme === "dark" ? "translate-x-[36px]" : "translate-x-0"
-                                    )}
-                                />
-                                {/* Sun Icon (Left) */}
-                                <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-                                    <Sun className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "light" ? "text-amber-500 fill-current" : "text-muted-foreground")} />
-                                </div>
-                                {/* Moon Icon (Right) */}
-                                <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-                                    <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-blue-400 fill-current" : "text-muted-foreground")} />
-                                </div>
-                            </div>
 
                             {/* User Menu */}
                             {user ? (
@@ -483,6 +664,36 @@ export function Header() {
                                             </Link>
                                         </DropdownMenuItem>
 
+                                        <DropdownMenuSeparator className="my-1" />
+
+                                        {/* ธีม (Theme Toggle) */}
+                                        <DropdownMenuItem asChild>
+                                            <div className="flex items-center justify-between w-[calc(100%-8px)] px-3 py-2.5 rounded-lg mx-1 select-none">
+                                                <span className="text-sm flex-1 text-foreground">ธีม</span>
+
+                                                {/* Capsule Theme Switcher */}
+                                                <div
+                                                    className="relative flex items-center w-[72px] h-8 bg-[#eef2f6] dark:bg-[#090a0f] border border-transparent dark:border-zinc-800/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
+                                                    onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                                                >
+                                                    {/* Sliding active pill indicator */}
+                                                    <div
+                                                        className={cn(
+                                                            "absolute top-1 left-2 w-6 h-6 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
+                                                            currentTheme === "dark" ? "translate-x-8" : "translate-x-0"
+                                                        )}
+                                                    />
+                                                    {/* Sun Icon (Left) */}
+                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                        <Sun className={cn("w-4 h-4 transition-colors duration-300", currentTheme === "light" ? "text-zinc-950" : "text-zinc-500")} />
+                                                    </div>
+                                                    {/* Moon Icon (Right) */}
+                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                        <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-white" : "text-zinc-400")} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </DropdownMenuItem>
 
                                         {/* ติดต่อหรือขอความช่วยเหลือ (Support) */}
                                         <DropdownMenuItem asChild>
@@ -500,7 +711,7 @@ export function Header() {
                                             <button
                                                 onClick={() => {
                                                     logout();
-                                                    router.push("/");
+                                                    router.push("/login");
                                                 }}
                                                 className="w-[calc(100%-8px)] flex items-center gap-3 px-3 py-2.5 text-destructive cursor-pointer hover:bg-destructive/10 rounded-lg mx-1 text-left border-none bg-transparent"
                                             >
@@ -542,28 +753,70 @@ export function Header() {
                             </form>
 
                             {/* Mobile Suggestions Dropdown */}
-                            {showSuggestions && suggestions.length > 0 && (
+                            {showSuggestions && (suggestions.length > 0 || (searchQuery.trim() === "" && searchHistory.length > 0)) && (
                                 <div className="absolute top-full left-0 right-0 mt-1.5 bg-card border border-border/80 rounded-2xl shadow-xl overflow-hidden z-50 animate-in fade-in duration-200">
                                     <div className="py-1">
-                                        {suggestions.map((game) => (
-                                            <button
-                                                key={game.slug}
-                                                type="button"
-                                                onClick={() => {
-                                                    setSearchQuery("");
-                                                    setShowSuggestions(false);
-                                                    setSearchOpen(false);
-                                                    router.push(`/game/${game.slug}`);
-                                                }}
-                                                className="w-full px-4 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center gap-3 transition-colors cursor-pointer"
-                                            >
-                                                <img src={game.image} alt={game.name} className="w-8 h-8 rounded-lg object-cover" />
-                                                <div className="flex flex-col">
-                                                    <span className="font-semibold text-foreground">{game.name}</span>
-                                                    <span className="text-[9px] text-muted-foreground uppercase">{game.category}</span>
+                                        {suggestions.length > 0 ? (
+                                            suggestions.map((game) => (
+                                                <button
+                                                    key={game.slug}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        saveSearchQuery(game.name);
+                                                        setSearchQuery("");
+                                                        setShowSuggestions(false);
+                                                        setSearchOpen(false);
+                                                        router.push(`/game/${game.slug}`);
+                                                    }}
+                                                    className="w-full px-4 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center gap-3 transition-colors cursor-pointer"
+                                                >
+                                                    <img src={game.image} alt={game.name} className="w-8 h-8 rounded-lg object-cover" />
+                                                    <div className="flex flex-col">
+                                                        <span className="font-semibold text-foreground">{game.name}</span>
+                                                        <span className="text-[9px] text-muted-foreground uppercase">{game.category}</span>
+                                                    </div>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="p-2">
+                                                <div className="flex items-center justify-between px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                                                    <span>ประวัติการค้นหาล่าสุด</span>
+                                                    <button
+                                                        onMouseDown={clearHistory}
+                                                        className="hover:text-primary transition-colors cursor-pointer normal-case"
+                                                    >
+                                                        ล้างทั้งหมด
+                                                    </button>
                                                 </div>
-                                            </button>
-                                        ))}
+                                                <div className="mt-1 space-y-0.5">
+                                                    {searchHistory.map((query) => (
+                                                        <div
+                                                            key={query}
+                                                            className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer"
+                                                            onClick={() => {
+                                                                setSearchQuery(query);
+                                                                saveSearchQuery(query);
+                                                                setShowSuggestions(false);
+                                                                setSearchOpen(false);
+                                                                router.push(`/search?q=${encodeURIComponent(query)}`);
+                                                            }}
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <History className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                                <span>{query}</span>
+                                                            </div>
+                                                            <button
+                                                                onMouseDown={(e) => removeHistoryItem(e, query)}
+                                                                className="p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                                                                title="ลบ"
+                                                            >
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             )}

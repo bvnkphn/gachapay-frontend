@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language-context";
-import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X } from "lucide-react";
+import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X, Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface GamePackage {
     id: string;
@@ -60,6 +61,41 @@ export default function GameTopupPage() {
     const [hydrated, setHydrated] = useState(false);
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+
+    const [isBookmarked, setIsBookmarked] = useState(false);
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && game?.slug) {
+            try {
+                const saved = localStorage.getItem("gachapay_bookmarked_games");
+                if (saved) {
+                    const list = JSON.parse(saved);
+                    setIsBookmarked(list.includes(game.slug));
+                }
+            } catch (e) {
+                console.error("Error checking bookmark status:", e);
+            }
+        }
+    }, [game?.slug]);
+
+    const handleBookmarkToggle = () => {
+        if (!game?.slug) return;
+        try {
+            const saved = localStorage.getItem("gachapay_bookmarked_games");
+            let list = saved ? JSON.parse(saved) : [];
+            if (list.includes(game.slug)) {
+                list = list.filter((slug: string) => slug !== game.slug);
+                setIsBookmarked(false);
+            } else {
+                list.push(game.slug);
+                setIsBookmarked(true);
+            }
+            localStorage.setItem("gachapay_bookmarked_games", JSON.stringify(list));
+            window.dispatchEvent(new Event("gachapay_bookmarks_changed"));
+        } catch (e) {
+            console.error("Error toggling bookmark:", e);
+        }
+    };
 
     const [paymentMethod, setPaymentMethod] = useState<"coin" | "qr">("coin");
     const [walletBalance, setWalletBalance] = useState(0);
@@ -360,15 +396,29 @@ export default function GameTopupPage() {
             {/* Main Content */}
             <div className="container mx-auto px-6 max-w-5xl pt-8">
                 {/* Back Button & Title */}
-                <div className="flex items-center gap-3 mb-6">
-                    <button 
-                        onClick={() => router.back()}
-                        className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm shrink-0"
-                        aria-label="Back"
+                <div className="flex items-center justify-between gap-3 mb-6 w-full">
+                    <div className="flex items-center gap-3">
+                        <button 
+                            onClick={() => router.back()}
+                            className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm shrink-0"
+                            aria-label="Back"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+                        <h1 className="text-xl font-black text-foreground">{game.name}</h1>
+                    </div>
+                    <button
+                        onClick={handleBookmarkToggle}
+                        className={cn(
+                            "flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm shrink-0 hover:scale-105 active:scale-95 sm:hidden",
+                            isBookmarked 
+                                ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20" 
+                                : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                        )}
+                        title={isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                     >
-                        <ChevronLeft className="w-5 h-5" />
+                        <Bookmark className={cn("w-4.5 h-4.5", isBookmarked && "fill-red-500 text-red-500")} />
                     </button>
-                    <h1 className="text-xl font-black text-foreground">{game.name}</h1>
                 </div>
 
                 {/* Error Message */}
@@ -400,6 +450,20 @@ export default function GameTopupPage() {
                             </div>
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                        
+                        {/* Bookmark Button on Top-Right of Banner */}
+                        <button
+                            onClick={handleBookmarkToggle}
+                            className={cn(
+                                "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer",
+                                isBookmarked
+                                    ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30"
+                                    : "bg-black/40 border-white/20 text-white hover:bg-black/60"
+                            )}
+                            title={isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
+                        >
+                            <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
+                        </button>
                     </div>
                     <div className="p-6">
                         <h1 className="text-3xl font-bold mb-2">{game.name}</h1>

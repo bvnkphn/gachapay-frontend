@@ -287,8 +287,8 @@ export default function AccountPage() {
     };
 
     const handleDeleteAccount = async () => {
-        if (deleteConfirmPhrase !== "DELETE") {
-            toast.error("กรุณาพิมพ์ DELETE เพื่อยืนยัน");
+        if (deleteConfirmPhrase !== "ลบข้อมูล") {
+            toast.error("กรุณาพิมพ์ ลบข้อมูล เพื่อยืนยัน");
             return;
         }
         if (!deletePassword) {
@@ -354,6 +354,19 @@ export default function AccountPage() {
                                     </div>
                                     <p className="text-xl font-black text-foreground truncate">{profile?.display_name || `${firstName} ${lastName}`.trim() || user?.email}</p>
                                     {user?.email && <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>}
+                                    {user?.id && (
+                                        <div 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                navigator.clipboard.writeText(user.id);
+                                                toast.success("คัดลอก ID ผู้ใช้แล้ว!");
+                                            }}
+                                            className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-foreground bg-muted/20 hover:bg-muted/40 transition-all px-2.5 py-0.5 rounded-full border border-border/30 cursor-pointer select-all"
+                                            title="คลิกเพื่อคัดลอก ID"
+                                        >
+                                            ID: {user.id}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-2 mt-4">
@@ -409,21 +422,6 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                             </div>
-                            
-                            {/* Copyable User ID at absolute bottom-left of card */}
-                            {user?.id && (
-                                <div 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        navigator.clipboard.writeText(user.id);
-                                        toast.success("คัดลอก ID ผู้ใช้แล้ว!");
-                                    }}
-                                    className="absolute bottom-4 left-6 z-20 text-[10px] font-mono text-muted-foreground/60 hover:text-foreground bg-muted/20 hover:bg-muted/40 transition-all px-2 py-0.5 rounded border border-border/30 cursor-pointer select-all"
-                                    title="คลิกเพื่อคัดลอก ID"
-                                >
-                                    ID: {user.id}
-                                </div>
-                            )}
                         </button>
                     </div>
 
@@ -804,23 +802,24 @@ export default function AccountPage() {
                         </div>
                     </div>
 
-                    {/* Delete Account Section */}
-                    <div className="glass-card rounded-2xl p-6 border border-red-500/30 bg-red-500/5">
-                        <h2 className="text-lg font-bold text-red-600 dark:text-red-400 flex items-center gap-2 mb-4">
-                            <X className="w-5 h-5" />
-                            ปิดบัญชี
-                        </h2>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            การปิดบัญชีจะลบข้อมูลทั้งหมดของคุณอย่างถาวร รวมถึงประวัติการสั่งซื้อ ยอดคงเหลือ และข้อมูลส่วนตัว การกระทำนี้ไม่สามารถย้อนกลับได้
-                        </p>
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            onClick={() => setShowDeleteModal(true)}
-                            className="bg-red-600 hover:bg-red-700 text-white"
-                        >
-                            ปิดบัญชีของฉัน
-                        </Button>
+                    {/* Delete Account Section - Danger Zone */}
+                    <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-6">
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <h3 className="text-base font-semibold text-foreground mb-2">ปิดบัญชี</h3>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    เมื่อคุณปิดบัญชี ข้อมูลทั้งหมดของคุณจะถูกลบอย่างถาวร รวมถึงประวัติการสั่งซื้อ ยอดคงเหลือ และข้อมูลส่วนตัว การกระทำนี้ไม่สามารถย้อนกลับได้
+                                </p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowDeleteModal(true)}
+                                className="border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-300 dark:hover:border-red-700 w-full sm:w-auto"
+                            >
+                                ปิดบัญชีของฉัน
+                            </Button>
+                        </div>
                     </div>
 
                 </div>
@@ -828,75 +827,85 @@ export default function AccountPage() {
 
             {/* Delete Account Confirmation Modal */}
             {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-background rounded-2xl w-full max-w-md shadow-2xl border border-border/40 overflow-hidden relative p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-red-600 dark:text-red-400">ยืนยันการปิดบัญชี</h3>
-                            <button
-                                onClick={() => {
-                                    setShowDeleteModal(false);
-                                    setDeleteConfirmPhrase("");
-                                    setDeletePassword("");
-                                }}
-                                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <p className="text-sm text-muted-foreground">
-                                คุณกำลังจะปิดบัญชีของคุณอย่างถาวร ข้อมูลทั้งหมดจะถูกลบและไม่สามารถกู้คืนได้
-                            </p>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                    พิมพ์ <span className="font-mono font-bold text-red-600 dark:text-red-400">DELETE</span> เพื่อยืนยัน
-                                </label>
-                                <Input
-                                    type="text"
-                                    value={deleteConfirmPhrase}
-                                    onChange={(e) => setDeleteConfirmPhrase(e.target.value)}
-                                    placeholder="DELETE"
-                                    className="bg-muted/30 border-border/50 focus:border-red-500"
-                                />
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                    รหัสผ่าน
-                                </label>
-                                <Input
-                                    type="password"
-                                    value={deletePassword}
-                                    onChange={(e) => setDeletePassword(e.target.value)}
-                                    placeholder="กรอกรหัสผ่านของคุณ"
-                                    className="bg-muted/30 border-border/50 focus:border-red-500"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 pt-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-background rounded-lg w-full max-w-lg shadow-xl border border-border overflow-hidden">
+                        <div className="p-6">
+                            <div className="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-foreground">ปิดบัญชีของคุณ?</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        การกระทำนี้ไม่สามารถย้อนกลับได้
+                                    </p>
+                                </div>
+                                <button
                                     onClick={() => {
                                         setShowDeleteModal(false);
                                         setDeleteConfirmPhrase("");
                                         setDeletePassword("");
                                     }}
-                                    className="flex-1"
+                                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                                 >
-                                    ยกเลิก
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="destructive"
-                                    onClick={handleDeleteAccount}
-                                    disabled={isDeleting || deleteConfirmPhrase !== "DELETE" || !deletePassword}
-                                    className="flex-1 bg-red-600 hover:bg-red-700"
-                                >
-                                    {isDeleting ? "กำลังลบ..." : "ยืนยันปิดบัญชี"}
-                                </Button>
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                <div className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-md">
+                                    <p className="text-sm text-red-900 dark:text-red-300">
+                                        คุณกำลังจะปิดบัญชีของคุณอย่างถาวร ข้อมูลทั้งหมดจะถูกลบและไม่สามารถกู้คืนได้
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-sm font-medium text-foreground mb-1.5 block">
+                                            พิมพ์ <span className="font-mono font-semibold text-red-600 dark:text-red-400">ลบข้อมูล</span> เพื่อยืนยัน
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={deleteConfirmPhrase}
+                                            onChange={(e) => setDeleteConfirmPhrase(e.target.value)}
+                                            placeholder="ลบข้อมูล"
+                                            className="border-border focus:border-red-500 focus:ring-red-500"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="text-sm font-medium text-foreground mb-1.5 block">
+                                            รหัสผ่าน
+                                        </label>
+                                        <Input
+                                            type="password"
+                                            value={deletePassword}
+                                            onChange={(e) => setDeletePassword(e.target.value)}
+                                            placeholder="กรอกรหัสผ่านของคุณ"
+                                            className="border-border focus:border-red-500 focus:ring-red-500"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => {
+                                            setShowDeleteModal(false);
+                                            setDeleteConfirmPhrase("");
+                                            setDeletePassword("");
+                                        }}
+                                        className="flex-1"
+                                    >
+                                        ยกเลิก
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        onClick={handleDeleteAccount}
+                                        disabled={isDeleting || deleteConfirmPhrase !== "ลบข้อมูล" || !deletePassword}
+                                        className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                                    >
+                                        {isDeleting ? "กำลังลบ..." : "ปิดบัญชี"}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>

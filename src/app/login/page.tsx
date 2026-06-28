@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Lock, Gamepad2, Loader2, Facebook, Sun, Moon } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Gamepad2, Loader2, Sun, Moon } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -77,10 +77,6 @@ export default function LoginPage() {
 
     const handleGoogleSignIn = () => {
         window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
-    };
-
-    const handleFacebookSignIn = () => {
-        window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/facebook`;
     };
 
     return (
@@ -193,29 +189,17 @@ export default function LoginPage() {
                                 <span className="bg-background px-2 text-muted-foreground">{t.divider}</span>
                             </div>
                         </div>
-
                         {/* Social Login Buttons */}
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-3">
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full bg-background/40 hover:bg-muted/50 border-border/50 text-foreground transition-all"
+                                className="w-full bg-background/40 hover:bg-muted/50 border-border/50 text-foreground transition-all h-11"
                                 onClick={handleGoogleSignIn}
                                 disabled={isLoading}
                             >
                                 <FcGoogle className="mr-2 h-5 w-5 shrink-0" />
                                 <span className="truncate">{t.google}</span>
-                            </Button>
-
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="w-full bg-background/40 hover:bg-muted/50 border-border/50 text-foreground transition-all"
-                                onClick={handleFacebookSignIn}
-                                disabled={isLoading}
-                            >
-                                <Facebook className="mr-2 h-5 w-5 fill-[#1877F2] text-[#1877F2] shrink-0" />
-                                <span className="truncate">{t.facebook}</span>
                             </Button>
                         </div>
 
