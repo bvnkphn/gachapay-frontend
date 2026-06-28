@@ -326,7 +326,7 @@ export function Header() {
                         </div>
 
                         {/* ── CENTER: Search bar ── */}
-                        <div className="flex-1 max-w-md mx-auto hidden sm:block relative">
+                        <div className="flex-1 max-w-md hidden sm:block relative ml-6">
                             <form onSubmit={handleSearch} className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                                 <input
@@ -337,7 +337,7 @@ export function Header() {
                                     onFocus={() => setShowSuggestions(true)}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                     placeholder="ค้นหาชื่อเกม"
-                                    className="w-full bg-muted/60 border border-border/40 rounded-full pl-9 pr-4 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 focus:bg-muted/80 transition-all outline-none"
+                                    className="w-full bg-muted/85 hover:bg-muted dark:bg-[#0c0d14] dark:hover:bg-[#121420] border border-border/80 hover:border-primary/50 focus:border-primary rounded-full pl-9 pr-4 py-2 text-xs text-foreground placeholder:text-muted-foreground/75 focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all outline-none shadow-sm focus:shadow-[0_0_12px_rgba(6,182,212,0.15)]"
                                 />
                             </form>
 
