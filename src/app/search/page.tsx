@@ -86,7 +86,7 @@ function SearchContent() {
                         <ChevronLeft className="w-5 h-5 text-foreground" />
                     </Button>
                     <h1 className="text-2xl font-black tracking-tight text-foreground">
-                        {query ? `${lang === "th" ? "ค้นหา" : "Search"}: ${query}` : (t.search || "ค้นหาเกม")}
+                        {query ? `${lang === "th" ? "ผลลัพธ์ของการค้นหา" : "Search results for"}: ${query}` : (t.search || "ค้นหาเกม")}
                     </h1>
                 </div>
 

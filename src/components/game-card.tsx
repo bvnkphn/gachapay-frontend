@@ -80,7 +80,7 @@ export function GameCard({ name, image, slug, category, label = 'NONE' }: GameCa
                     {/* Category Badge */}
                     {category && (
                         <div className="absolute top-3 left-3">
-                            <span className="px-2 py-1 text-xs font-medium bg-primary/20 text-primary rounded-full border border-primary/30">
+                            <span className="px-2.5 py-0.5 text-[10px] font-bold bg-background/90 text-foreground backdrop-blur-sm rounded-md border border-border/50 uppercase tracking-wider">
                                 {category}
                             </span>
                         </div>
