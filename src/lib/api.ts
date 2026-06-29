@@ -209,4 +209,12 @@ export const api = {
         apiRequest(`/users/me/addresses/${id}/default`, {
             method: "PATCH",
         }),
+
+    // Bookmarks
+    getBookmarks: () => apiRequest("/users/me/bookmarks"),
+    toggleBookmark: (gameId: number) =>
+        apiRequest("/users/me/bookmarks", {
+            method: "POST",
+            body: JSON.stringify({ gameId }),
+        }),
 };

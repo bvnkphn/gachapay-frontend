@@ -99,11 +99,11 @@ export default function BannerSlider() {
         setLoading(true)
         setError(null)
         const response = await fetch(API_BASE_URL + '/banners')
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch: ' + response.statusText)
         }
-        
+
         const result = await response.json()
         const fetchedBanners = result.data || []
         setBanners(fetchedBanners.length > 0 ? fetchedBanners : MOCK_BANNERS)
@@ -183,10 +183,10 @@ export default function BannerSlider() {
                 i === index
                   ? "center"
                   : i === (index - 1 + banners.length) % banners.length
-                  ? "left"
-                  : i === (index + 1) % banners.length
-                  ? "right"
-                  : "hidden"
+                    ? "left"
+                    : i === (index + 1) % banners.length
+                      ? "right"
+                      : "hidden"
 
               const isFirstBanner = i === 0
               const isLastBanner = i === banners.length - 1
@@ -212,10 +212,10 @@ export default function BannerSlider() {
                       position === "center"
                         ? "scale(1) translateX(0)"
                         : position === "left"
-                        ? "scale(0.85) translateX(-35%)"
-                        : position === "right"
-                        ? "scale(0.85) translateX(35%)"
-                        : "scale(0.75)",
+                          ? "scale(0.85) translateX(-35%)"
+                          : position === "right"
+                            ? "scale(0.85) translateX(35%)"
+                            : "scale(0.75)",
                     opacity: position === "center" ? 1 : position === "hidden" ? 0 : 0.5,
                     zIndex: position === "center" ? 10 : position === "left" ? 8 : position === "right" ? 8 : 5,
                     transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
@@ -227,7 +227,7 @@ export default function BannerSlider() {
                     draggable={false}
                     className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-105 animate-fade-in"
                   />
-                  
+
                   {/* Text Overlay container */}
                   {(banner.title || banner.description) && (
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent flex flex-col justify-end p-5 sm:p-8 md:p-12 text-white pointer-events-none">
@@ -243,7 +243,7 @@ export default function BannerSlider() {
                       )}
                     </div>
                   )}
-                  
+
                   {/* Subtle glassmorphic inner border glare on hover */}
                   <span className="absolute inset-0 border border-white/5 group-hover:border-white/10 rounded-2xl pointer-events-none transition-colors" />
                 </div>
@@ -286,8 +286,8 @@ export default function BannerSlider() {
                 onClick={() => setIndex(i)}
                 className={cn(
                   "w-2 h-2 rounded-full transition-all duration-300",
-                  i === index 
-                    ? "bg-foreground w-6 shadow-[0_0_8px_rgba(255,255,255,0.15)]" 
+                  i === index
+                    ? "bg-foreground w-6 shadow-[0_0_8px_rgba(255,255,255,0.15)]"
                     : "bg-foreground/20 hover:bg-foreground/45"
                 )}
                 aria-label={"Go to slide " + (i + 1)}
@@ -311,7 +311,7 @@ export default function BannerSlider() {
                 ✗
               </button>
             </div>
-            
+
             <div className="p-6">
               <h3 className="text-xl font-bold text-foreground mb-3 text-cyan-400">{selectedBanner.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
@@ -326,7 +326,7 @@ export default function BannerSlider() {
                 >
                   ปิด
                 </button>
-                 {selectedBanner.uuid === 'mock-1' ? (
+                {selectedBanner.uuid === 'mock-1' ? (
                   <button
                     onClick={() => {
                       window.dispatchEvent(new Event("open-gacha-modal"));
@@ -334,7 +334,7 @@ export default function BannerSlider() {
                     }}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20 animate-pulse"
                   >
-                    🎰 หมุนวงล้อนำโชค
+                    หมุนวงล้อนำโชค
                   </button>
                 ) : selectedBanner.uuid === 'mock-2' ? (
                   <button

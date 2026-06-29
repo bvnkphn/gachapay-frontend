@@ -65,35 +65,30 @@ export default function GameTopupPage() {
     const [isBookmarked, setIsBookmarked] = useState(false);
 
     useEffect(() => {
-        if (typeof window !== "undefined" && game?.slug) {
-            try {
-                const saved = localStorage.getItem("gachapay_bookmarked_games");
-                if (saved) {
-                    const list = JSON.parse(saved);
-                    setIsBookmarked(list.includes(game.slug));
+        const checkBookmarkStatus = async () => {
+            if (isLoggedIn && game?.id) {
+                try {
+                    const list = await api.getBookmarks();
+                    const hasBookmark = list.some((b: any) => String(b.id) === String(game.id));
+                    setIsBookmarked(hasBookmark);
+                } catch (e) {
+                    console.error("Error checking bookmark status:", e);
                 }
-            } catch (e) {
-                console.error("Error checking bookmark status:", e);
             }
-        }
-    }, [game?.slug]);
+        };
+        checkBookmarkStatus();
+    }, [game?.id, isLoggedIn]);
 
-    const handleBookmarkToggle = () => {
-        if (!game?.slug) return;
+    const handleBookmarkToggle = async () => {
+        if (!game?.id) return;
         try {
-            const saved = localStorage.getItem("gachapay_bookmarked_games");
-            let list = saved ? JSON.parse(saved) : [];
-            if (list.includes(game.slug)) {
-                list = list.filter((slug: string) => slug !== game.slug);
-                setIsBookmarked(false);
-            } else {
-                list.push(game.slug);
-                setIsBookmarked(true);
-            }
-            localStorage.setItem("gachapay_bookmarked_games", JSON.stringify(list));
+            const res = await api.toggleBookmark(Number(game.id));
+            setIsBookmarked(res.bookmarked);
+            toast.success(res.message);
             window.dispatchEvent(new Event("gachapay_bookmarks_changed"));
-        } catch (e) {
+        } catch (e: any) {
             console.error("Error toggling bookmark:", e);
+            toast.error(e.message || "ไม่สามารถปักหมุดเกมได้ในขณะนี้");
         }
     };
 

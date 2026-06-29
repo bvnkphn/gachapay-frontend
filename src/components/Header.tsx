@@ -80,22 +80,22 @@ export function Header() {
 
     const [bookmarks, setBookmarks] = useState<any[]>([]);
 
-    const fetchBookmarks = () => {
-        if (typeof window !== "undefined") {
+    const fetchBookmarks = async () => {
+        if (user) {
             try {
-                const saved = localStorage.getItem("gachapay_bookmarked_games");
-                const bookmarkedSlugs = saved ? JSON.parse(saved) : [];
-                const matched = allGames.filter(g => bookmarkedSlugs.includes(g.slug));
-                setBookmarks(matched);
+                const fetched = await api.getBookmarks();
+                setBookmarks(fetched || []);
             } catch (e) {
                 console.error("Error fetching bookmarks in Header:", e);
             }
+        } else {
+            setBookmarks([]);
         }
     };
 
     useEffect(() => {
         fetchBookmarks();
-    }, [allGames]);
+    }, [allGames, user]);
 
     useEffect(() => {
         const handleUpdate = () => {
@@ -103,7 +103,7 @@ export function Header() {
         };
         window.addEventListener("gachapay_bookmarks_changed", handleUpdate);
         return () => window.removeEventListener("gachapay_bookmarks_changed", handleUpdate);
-    }, [allGames]);
+    }, [allGames, user]);
 
     useEffect(() => {
         const handleOpenGacha = () => {
