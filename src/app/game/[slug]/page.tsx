@@ -543,8 +543,11 @@ export default function GameTopupPage() {
                                                             setFormData({ ...formData, [field.name]: e.target.value });
                                                             if (error) setError(null);
                                                         }}
-                                                        className="w-full bg-muted/30 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:border-primary/60 focus:ring-primary/20 bg-background/20 backdrop-blur-sm cursor-pointer h-10 transition-all"
-                                                        disabled={submitting}
+                                                        className={cn(
+                                                            "w-full bg-muted/30 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:border-primary/60 focus:ring-primary/20 bg-background/20 backdrop-blur-sm cursor-pointer h-10 transition-all",
+                                                            !isLoggedIn && "opacity-50 border-border/20 cursor-not-allowed"
+                                                        )}
+                                                        disabled={submitting || !isLoggedIn}
                                                     >
                                                         <option value="" disabled className="bg-background text-foreground">
                                                             {field.placeholder || `เลือก ${field.label}`}
@@ -569,8 +572,11 @@ export default function GameTopupPage() {
                                                             setFormData({ ...formData, [field.name]: cleanValue });
                                                             if (error) setError(null);
                                                         }}
-                                                        className="bg-muted/30 border-border/50 text-foreground focus:border-primary/60 focus:ring-primary/20"
-                                                        disabled={submitting}
+                                                        className={cn(
+                                                            "bg-muted/30 border-border/50 text-foreground focus:border-primary/60 focus:ring-primary/20",
+                                                            !isLoggedIn && "opacity-50 border-border/20 cursor-not-allowed"
+                                                        )}
+                                                        disabled={submitting || !isLoggedIn}
                                                     />
                                                 )}
                                             </div>
@@ -595,26 +601,33 @@ export default function GameTopupPage() {
                                         return (
                                             <div
                                                 key={pkg.id}
-                                                className="cursor-pointer group"
                                                 onClick={() => {
+                                                    if (!isLoggedIn) {
+                                                        toast.error("ต้องเข้าสู่ระบบก่อนทำรายการ");
+                                                        return;
+                                                    }
                                                     setSelectedPackage(pkg);
                                                     if (error) setError(null);
                                                 }}
+                                                className={cn(
+                                                    "h-full p-3 rounded-2xl transition-all duration-300 border select-none",
+                                                    !isLoggedIn
+                                                        ? "border-border/20 bg-muted/10 opacity-50 cursor-not-allowed"
+                                                        : selected 
+                                                            ? "border-primary/70 bg-primary/10 shadow-[0_0_25px_rgba(56,189,248,0.16)] cursor-pointer" 
+                                                            : "border-border/30 bg-muted/30 hover:border-primary/50 hover:bg-muted/40 cursor-pointer"
+                                                )}
                                             >
-                                                <div
-                                                    className={`p-3 h-full rounded-2xl transition-all duration-300 border ${selected ? "border-primary/70 bg-primary/10 shadow-[0_0_25px_rgba(56,189,248,0.16)]" : "border-border/30 bg-muted/30 hover:border-primary/50 hover:bg-muted/40"}`}
-                                                >
-                                                    <div className="mb-3">
-                                                        <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
-                                                        <p className="text-sm font-bold text-foreground line-clamp-2">
-                                                            {pkg.count}
-                                                        </p>
-                                                    </div>
-                                                    <div className="pt-3 border-t border-border/20">
-                                                        <p className="text-lg font-bold text-primary">
-                                                            ฿ {pkg.price.toFixed(2)}
-                                                        </p>
-                                                    </div>
+                                                <div className="mb-3">
+                                                    <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
+                                                    <p className="text-sm font-bold text-foreground line-clamp-2">
+                                                        {pkg.count}
+                                                    </p>
+                                                </div>
+                                                <div className="pt-3 border-t border-border/20">
+                                                    <p className="text-lg font-bold text-primary">
+                                                        ฿ {pkg.price.toFixed(2)}
+                                                    </p>
                                                 </div>
                                             </div>
                                         );
@@ -741,22 +754,27 @@ export default function GameTopupPage() {
                             <Button
                                 onClick={handleSubmit}
                                 disabled={submitting || (isLoggedIn && !selectedPackage)}
-                                className="w-full bg-primary hover:bg-primary/95 text-white h-12 font-bold rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
+                                className={cn(
+                                    "w-full h-12 font-bold rounded-xl transition-all shadow-md active:scale-[0.98]",
+                                    !isLoggedIn
+                                        ? "bg-muted border border-border/50 text-muted-foreground/60 cursor-pointer"
+                                        : "bg-primary hover:bg-primary/95 text-white cursor-pointer hover:shadow-lg"
+                                )}
                             >
                                 {submitting ? (
                                     <>
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                         {t.processing}
                                     </>
-                                ) : isLoggedIn ? (
+                                ) : !isLoggedIn ? (
                                     <>
-                                        <ShoppingCart className="w-5 h-5 mr-2" />
+                                        <LockIcon className="w-4.5 h-4.5 mr-2 text-muted-foreground/60" />
                                         สั่งซื้อ
                                     </>
                                 ) : (
                                     <>
                                         <ShoppingCart className="w-5 h-5 mr-2" />
-                                        เข้าสู่ระบบเพื่อสั่งซื้อ
+                                        สั่งซื้อ
                                     </>
                                 )}
                             </Button>
