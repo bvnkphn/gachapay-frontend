@@ -82,6 +82,9 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
         ))}
       </nav>
       <div className="px-3 py-4 space-y-1 flex-shrink-0 border-t border-border/80">
+        <Link href="/" className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-bold text-cyan-500 hover:text-cyan-400 hover:bg-cyan-500/5 transition">
+          🏪 ไปหน้าร้านค้า
+        </Link>
         <button onClick={() => { logout(); router.replace('/'); }}
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-red-500 hover:text-red-400 hover:bg-red-500/5 transition">
           ✗ ออกจากระบบ

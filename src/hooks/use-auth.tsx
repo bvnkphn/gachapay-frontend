@@ -10,6 +10,7 @@ interface User {
     avatar?: string;
     balance?: number;
     vipLevel?: number;
+    role?: string;
 }
 
 interface AuthState {

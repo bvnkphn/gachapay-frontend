@@ -640,6 +640,16 @@ export function Header() {
 
                                         <DropdownMenuSeparator className="mb-1" />
 
+                                        {/* แผงควบคุมแอดมิน (Admin Panel) */}
+                                        {user.role === "ADMIN" && (
+                                            <DropdownMenuItem asChild>
+                                                <Link href="/admin" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer bg-primary/10 hover:bg-primary/20 text-primary rounded-lg mx-1 font-bold">
+                                                    <Crown className="w-4 h-4 text-primary" />
+                                                    <span className="text-sm">แผงควบคุมแอดมิน</span>
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        )}
+
                                         {/* บัญชีของฉัน (My Account) */}
                                         <DropdownMenuItem asChild>
                                             <Link href="/account" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50 rounded-lg mx-1">
