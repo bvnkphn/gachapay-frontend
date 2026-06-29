@@ -212,6 +212,11 @@ export default function GameTopupPage() {
         // Validation
         if (!game) return;
 
+        if (!isLoggedIn) {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+        }
+
         // Check all required fields
         for (const field of game.fields) {
             if (field.required && !formData[field.name]?.trim()) {
@@ -624,29 +629,7 @@ export default function GameTopupPage() {
                     {/* Right Column - Order Form (Sticky) */}
                     <div className="lg:col-span-1">
                         <div className="glass-card rounded-2xl p-6 sticky top-24">
-                            <div className="mb-4 pb-4 border-b border-border/50">
-                                <p className="text-xs text-muted-foreground">{t.orderType}</p>
-                                <p className="text-sm font-semibold">
-                                    {isLoggedIn ? (
-                                        <span className="text-green-500">{t.alreadyLoggedIn}</span>
-                                    ) : (
-                                        <span className="text-amber-500">{t.buyWithoutLogin}</span>
-                                    )}
-                                </p>
-                                {!isLoggedIn && user && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => {
-                                            setIsLoggedIn(true);
-                                            setFormData(prev => ({ ...prev, email: user.email || "" }));
-                                        }}
-                                        className="w-full mt-2 text-xs"
-                                    >
-                                        {t.switchToMember}
-                                    </Button>
-                                )}
-                            </div>
+
 
                             {/* Payment Method Selection */}
                             <div className="mb-6 pb-6 border-b border-border/50">
@@ -673,7 +656,13 @@ export default function GameTopupPage() {
                                     </button>
                                     <button
                                         type="button"
-                                        onClick={() => setPaymentMethod("qr")}
+                                        onClick={() => {
+                                            if (!isLoggedIn) {
+                                                toast.error("ต้องเข้าสู่ระบบก่อนทำรายการ");
+                                                return;
+                                            }
+                                            setPaymentMethod("qr");
+                                        }}
                                         className={cn(
                                             "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer select-none",
                                             paymentMethod === "qr"
@@ -744,36 +733,12 @@ export default function GameTopupPage() {
                                 </div>
                             </div>
 
-                            {/* User Inputs */}
-                            <div className="space-y-4 mb-6">
-                                {/* Email field for guest checkout */}
-                                {!isLoggedIn && (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-2">
-                                            {t.emailForReceipt} <span className="text-red-500">*</span>
-                                        </label>
-                                        <Input
-                                            type="email"
-                                            placeholder="example@email.com"
-                                            value={formData.email}
-                                            onChange={(e) => {
-                                                setFormData({ ...formData, email: e.target.value });
-                                                if (error) setError(null);
-                                            }}
-                                            className="glass-input"
-                                            disabled={submitting}
-                                        />
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {t.receiptNote}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+
 
                             {/* Submit Button */}
                             <Button
                                 onClick={handleSubmit}
-                                disabled={submitting || !selectedPackage}
+                                disabled={submitting || (isLoggedIn && !selectedPackage)}
                                 className="w-full bg-primary hover:bg-primary/95 text-white h-12 font-bold rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
                             >
                                 {submitting ? (
@@ -781,10 +746,15 @@ export default function GameTopupPage() {
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                         {t.processing}
                                     </>
-                                ) : (
+                                ) : isLoggedIn ? (
                                     <>
                                         <ShoppingCart className="w-5 h-5 mr-2" />
                                         สั่งซื้อ
+                                    </>
+                                ) : (
+                                    <>
+                                        <ShoppingCart className="w-5 h-5 mr-2" />
+                                        เข้าสู่ระบบเพื่อสั่งซื้อ
                                     </>
                                 )}
                             </Button>
