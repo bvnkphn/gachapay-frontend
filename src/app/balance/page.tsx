@@ -1025,14 +1025,8 @@ export default function BalancePage() {
     const [txHistory, setTxHistory] = useState<any[]>([]);
     const [selectedTx, setSelectedTx] = useState<any>(null);
 
-    const bonusBalance = useMemo(() => {
-        if (typeof window === "undefined" || !user) return 0;
-        return parseFloat(localStorage.getItem(`gachapay_bonus_coins_${user.id}`) || "0");
-    }, [user]);
-
-    const depositedBalance = useMemo(() => {
-        return Math.max(0, walletBalance - bonusBalance);
-    }, [walletBalance, bonusBalance]);
+    const [depositedBalance, setDepositedBalance] = useState<number>(0);
+    const [bonusBalance, setBonusBalance] = useState<number>(0);
 
     // Pagination & Filter States for history
     const [historyPage, setHistoryPage] = useState(1);
@@ -1061,7 +1055,11 @@ export default function BalancePage() {
 
     const refreshData = useCallback(() => {
         if (!user) return;
-        api.getWalletBalance().then((d) => setWalletBalance(parseFloat(d?.amount ?? "0")));
+        api.getWalletBalance().then((d) => {
+            setWalletBalance(parseFloat(d?.amount ?? "0"));
+            setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
+            setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
+        });
         api.getTopupTransactions({ limit: 100 }).then((d) => setTxHistory(d?.items ?? []));
         api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
             const pending = d?.items?.[0];
@@ -1078,6 +1076,8 @@ export default function BalancePage() {
         Promise.all([
             api.getWalletBalance().then((d) => {
                 setWalletBalance(parseFloat(d?.amount ?? "0"));
+                setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
+                setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
                 window.dispatchEvent(new Event("balance-changed"));
             }),
             api.getTopupMethods().then((d) => {
