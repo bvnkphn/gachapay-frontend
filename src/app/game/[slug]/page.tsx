@@ -447,14 +447,7 @@ export default function GameTopupPage() {
                         title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                         disabled={!isLoggedIn}
                     >
-                        {!isLoggedIn ? (
-                            <div className="relative flex items-center justify-center w-full h-full">
-                                <Bookmark className="w-4.5 h-4.5 text-muted-foreground/30 opacity-40" />
-                                <LockIcon className="w-2.5 h-2.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
-                            </div>
-                        ) : (
-                            <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
-                        )}
+                        <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
                     </button>
                 </div>
 
@@ -502,14 +495,7 @@ export default function GameTopupPage() {
                             title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                             disabled={!isLoggedIn}
                         >
-                            {!isLoggedIn ? (
-                                <div className="relative flex items-center justify-center w-full h-full">
-                                    <Bookmark className="w-5 h-5 text-white/30 opacity-40" />
-                                    <LockIcon className="w-3.5 h-3.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
-                                </div>
-                            ) : (
-                                <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
-                            )}
+                            <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
                         </button>
                     </div>
                     <div className="p-6">
