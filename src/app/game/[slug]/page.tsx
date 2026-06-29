@@ -340,28 +340,47 @@ export default function GameTopupPage() {
         }
     };
 
-    const handleApplyCoupon = () => {
-        if (!couponCode.trim()) {
-            setError(t.enterCouponError);
+    const handleApplyCoupon = async () => {
+        const code = couponCode.trim();
+        if (!code) {
+            toast.error(t.enterCouponError || "กรุณากรอกรหัสคูปอง");
             return;
         }
 
-        // Simple mock coupon validation
-        const mockCoupons: Record<string, number> = {
-            "SAVE10": 10,
-            "SAVE20": 20,
-            "WELCOME": 15,
-        };
-
-        const discount = mockCoupons[couponCode.toUpperCase()];
-
-        if (discount) {
-            setAppliedCoupon({ code: couponCode.toUpperCase(), discount });
-            setCouponCode("");
+        try {
+            setSubmitting(true);
             setError(null);
-        } else {
-            setError(t.invalidCouponError);
+            
+            const res = await api.validateCoupon({
+                code: code,
+                gameId: game.id,
+                packageId: selectedPackage.id,
+                amount: selectedPackage.price
+            }, user?.id || "1");
+
+            if (res && res.success && res.data) {
+                let percentage = 0;
+                if (res.data.discountType === 'PERCENTAGE') {
+                    percentage = res.data.discountValue;
+                } else {
+                    percentage = Math.round((res.data.discountAmount / selectedPackage.price) * 100);
+                }
+
+                setAppliedCoupon({
+                    code: res.data.code,
+                    discount: percentage
+                });
+                setCouponCode("");
+                toast.success(`ใช้คูปอง "${res.data.code}" สำเร็จ! ได้รับส่วนลด ฿${res.data.discountAmount}`);
+            } else {
+                toast.error(res?.message || "คูปองไม่ถูกต้อง");
+                setAppliedCoupon(null);
+            }
+        } catch (err: any) {
+            toast.error(err.message || "เกิดข้อผิดพลาดในการตรวจสอบคูปอง");
             setAppliedCoupon(null);
+        } finally {
+            setSubmitting(false);
         }
     };
 

@@ -109,6 +109,11 @@ export const api = {
             method: "POST",
             body: JSON.stringify(data),
         }),
+    validateCoupon: (data: { code: string; gameId?: number; packageId?: number; amount?: number }, userId: string) =>
+        apiRequest(`/coupons/validate?userId=${userId}`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        }),
 
     // Account Overview
     getMe: () => apiRequest("/users/me"),
