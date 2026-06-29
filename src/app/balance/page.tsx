@@ -296,6 +296,10 @@ function PaymentFlowModal({
                                 <span className="text-muted-foreground">ธนาคารปลายทาง</span>
                                 <span className="text-foreground font-semibold">{bankDetails?.name ?? "ธนาคารกสิกรไทย (KBANK)"}</span>
                             </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">ชื่อบัญชี</span>
+                                <span className="text-foreground font-semibold">{bankDetails?.accName ?? "บจก. กาชาเพย์ (GachaPay Co., Ltd.)"}</span>
+                            </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">เลขบัญชี</span>
                                 <div className="flex items-center gap-1.5">
@@ -310,10 +314,6 @@ function PaymentFlowModal({
                                         คัดลอก
                                     </button>
                                 </div>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">ชื่อบัญชี</span>
-                                <span className="text-foreground font-semibold">{bankDetails?.accName ?? "บจก. กาชาเพย์ (GachaPay Co., Ltd.)"}</span>
                             </div>
                             <div className="flex justify-between items-center border-t border-border/20 pt-2">
                                 <span className="text-muted-foreground">เลขที่อ้างอิง</span>
@@ -1006,7 +1006,7 @@ function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeo
 
 export default function BalancePage() {
     const router = useRouter();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
     const { t, lang } = useLanguage();
     const { open } = useSidebar();
 
@@ -1054,9 +1054,11 @@ export default function BalancePage() {
     const refreshData = useCallback(() => {
         if (!user) return;
         api.getWalletBalance().then((d) => {
-            setWalletBalance(parseFloat(d?.amount ?? "0"));
+            const newBalance = parseFloat(d?.amount ?? "0");
+            setWalletBalance(newBalance);
             setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
             setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
+            updateUser({ balance: newBalance });
         });
         api.getTopupTransactions({ limit: 100 }).then((d) => setTxHistory(d?.items ?? []));
         api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
@@ -1073,9 +1075,11 @@ export default function BalancePage() {
         if (!user) return;
         Promise.all([
             api.getWalletBalance().then((d) => {
-                setWalletBalance(parseFloat(d?.amount ?? "0"));
+                const newBalance = parseFloat(d?.amount ?? "0");
+                setWalletBalance(newBalance);
                 setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
                 setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
+                updateUser({ balance: newBalance });
                 window.dispatchEvent(new Event("balance-changed"));
             }),
             api.getTopupMethods().then((d) => {
@@ -1097,6 +1101,12 @@ export default function BalancePage() {
             window.removeEventListener("balance-changed", refreshData);
         };
     }, [refreshData]);
+
+    useEffect(() => {
+        if (user && typeof user.balance === "number") {
+            setWalletBalance(user.balance);
+        }
+    }, [user?.balance]);
 
     // Filtering & Pagination Logic
     const filteredHistory = useMemo(() => {

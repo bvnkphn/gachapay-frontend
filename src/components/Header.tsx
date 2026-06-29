@@ -24,7 +24,7 @@ import { useState, useRef, useEffect } from "react";
 export function Header() {
     const pathname = usePathname();
     const router = useRouter();
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
     const { lang, t } = useLanguage();
     const { open, toggle } = useSidebar();
     const { theme, setTheme, resolvedTheme } = useTheme();
@@ -197,7 +197,9 @@ export function Header() {
         if (user) {
             api.getWalletBalance()
                 .then((resData) => {
-                    setBalance(parseFloat(resData?.amount ?? "0"));
+                    const newBalance = parseFloat(resData?.amount ?? "0");
+                    setBalance(newBalance);
+                    updateUser({ balance: newBalance });
                 })
                 .catch(() => {
                     setBalance(user.balance ?? 0);
@@ -212,6 +214,12 @@ export function Header() {
             window.removeEventListener("balance-changed", fetchBalance);
         };
     }, [user]);
+
+    useEffect(() => {
+        if (user) {
+            setBalance(user.balance ?? 0);
+        }
+    }, [user?.balance]);
 
     // Gacha setup
     const SEGMENTS = [

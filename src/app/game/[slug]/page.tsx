@@ -47,7 +47,7 @@ export default function GameTopupPage() {
     const params = useParams();
     const router = useRouter();
     const { t } = useLanguage();
-    const { user } = useAuth();
+    const { user, updateUser } = useAuth();
 
     const [game, setGame] = useState<Game | null>(null);
     const [loading, setLoading] = useState(true);
@@ -106,13 +106,15 @@ export default function GameTopupPage() {
         if (user) {
             api.getWalletBalance()
                 .then((resData) => {
-                    setWalletBalance(parseFloat(resData?.amount ?? "0"));
+                    const newBalance = parseFloat(resData?.amount ?? "0");
+                    setWalletBalance(newBalance);
+                    updateUser({ balance: newBalance });
                 })
                 .catch(() => {
                     setWalletBalance(user.balance ?? 0);
                 });
         }
-    }, [user]);
+    }, [user, updateUser]);
 
     useEffect(() => {
         fetchBalance();
@@ -121,6 +123,12 @@ export default function GameTopupPage() {
             window.removeEventListener("balance-changed", fetchBalance);
         };
     }, [fetchBalance]);
+
+    useEffect(() => {
+        if (user && typeof user.balance === "number") {
+            setWalletBalance(user.balance);
+        }
+    }, [user?.balance]);
 
     // Check if auth store has hydrated from localStorage
     useEffect(() => {
