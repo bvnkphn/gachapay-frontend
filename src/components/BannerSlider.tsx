@@ -332,7 +332,7 @@ export default function BannerSlider() {
                       window.dispatchEvent(new Event("open-gacha-modal"));
                       setSelectedBanner(null);
                     }}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20 animate-pulse"
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
                   >
                     หมุนวงล้อนำโชค
                   </button>
