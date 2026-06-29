@@ -338,8 +338,8 @@ export default function GameTopupPage() {
                 console.error("Unexpected response structure:", response);
                 throw new Error("Invalid response from server");
             }
-        } catch (err) {
-            setError(err instanceof Error ? err.message : t.failedCreateOrder || "Failed to create order");
+        } catch (err: any) {
+            toast.error(err.message || "เกิดข้อผิดพลาดในการสั่งซื้อ");
             console.error("Order payment execution error:", err);
         } finally {
             setSubmitting(false);

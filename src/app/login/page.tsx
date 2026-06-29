@@ -31,6 +31,19 @@ export default function LoginPage() {
     useEffect(() => { setMounted(true); }, []);
     const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
 
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get("expired") === "true") {
+                // Wait briefly for component mount toast support
+                setTimeout(() => {
+                    toast.error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+                }, 100);
+                router.replace("/login");
+            }
+        }
+    }, [router]);
+
     const validateEmail = (email: string) => {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     };

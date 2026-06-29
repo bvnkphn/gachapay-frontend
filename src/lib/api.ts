@@ -22,6 +22,13 @@ export async function apiRequest(
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            if (typeof window !== "undefined") {
+                localStorage.removeItem("auth-storage");
+                window.location.href = "/login?expired=true";
+            }
+            throw new Error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+        }
         const error = await response.json().catch(() => ({ message: "Request failed" }));
         const errorMessage = error.message || `HTTP ${response.status}: ${response.statusText}`;
         console.error('API Error Response:', { status: response.status, error });
