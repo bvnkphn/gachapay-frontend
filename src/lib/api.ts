@@ -176,4 +176,25 @@ export const api = {
             method: "PATCH",
             body: JSON.stringify({ slipUrl, bankCode }),
         }),
+
+    // Addresses
+    getAddresses: () => apiRequest("/users/me/addresses"),
+    addAddress: (data: any) =>
+        apiRequest("/users/me/addresses", {
+            method: "POST",
+            body: JSON.stringify(data),
+        }),
+    updateAddress: (id: string, data: any) =>
+        apiRequest(`/users/me/addresses/${id}`, {
+            method: "PUT",
+            body: JSON.stringify(data),
+        }),
+    deleteAddress: (id: string) =>
+        apiRequest(`/users/me/addresses/${id}`, {
+            method: "DELETE",
+        }),
+    setDefaultAddress: (id: string) =>
+        apiRequest(`/users/me/addresses/${id}/default`, {
+            method: "PATCH",
+        }),
 };

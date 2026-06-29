@@ -59,6 +59,7 @@ export default function AccountPage() {
     const [district, setDistrict] = useState("");
     const [subDistrict, setSubDistrict] = useState("");
     const [postalCode, setPostalCode] = useState("");
+    const [activeAddressId, setActiveAddressId] = useState<string | null>(null);
     const [isEditingProfile, setIsEditingProfile] = useState(false);
     const [savedProfile, setSavedProfile] = useState({
         firstName: "",
@@ -121,39 +122,100 @@ export default function AccountPage() {
             api.getLoyalty().then(setLoyalty),
             api.getWalletBalance().then(setBalance),
             api.getRecentOrders().then((r) => setOrders(r.recent_orders ?? [])),
+            api.getAddresses().then((addrList: any[]) => {
+                if (addrList && addrList.length > 0) {
+                    const addr = addrList.find((a: any) => a.isDefault) || addrList[0];
+                    const parts = addr.recipientName.trim().split(" ");
+                    const first = parts[0] || "";
+                    const rest = parts.slice(1).join(" ") || "";
+                    
+                    setFirstName(first);
+                    setLastName(rest);
+                    setPhone(formatPhoneNumber(addr.phone));
+                    setAddressLine1(addr.addressLine1);
+                    setAddressLine2(addr.addressLine2 || "");
+                    setProvince(addr.province);
+                    setDistrict(addr.district);
+                    setSubDistrict(addr.subDistrict || "");
+                    setPostalCode(addr.postalCode);
+                    setActiveAddressId(addr.id);
+
+                    setSavedProfile({
+                        firstName: first,
+                        lastName: rest,
+                        phone: formatPhoneNumber(addr.phone),
+                        addressLine1: addr.addressLine1,
+                        addressLine2: addr.addressLine2 || "",
+                        province: addr.province,
+                        district: addr.district,
+                        subDistrict: addr.subDistrict || "",
+                        postalCode: addr.postalCode,
+                    });
+                } else {
+                    const storedFirstName = localStorage.getItem("gachapay_first_name") || "";
+                    const storedLastName = localStorage.getItem("gachapay_last_name") || "";
+                    const storedPhone = formatPhoneNumber(localStorage.getItem("gachapay_phone") || "");
+                    const storedAddressLine1 = localStorage.getItem("gachapay_address_line1") || "";
+                    const storedAddressLine2 = localStorage.getItem("gachapay_address_line2") || "";
+                    const storedProvince = localStorage.getItem("gachapay_province") || "";
+                    const storedDistrict = localStorage.getItem("gachapay_district") || "";
+                    const storedSubDistrict = localStorage.getItem("gachapay_sub_district") || "";
+                    const storedPostalCode = localStorage.getItem("gachapay_postal_code") || "";
+
+                    setFirstName(storedFirstName);
+                    setLastName(storedLastName);
+                    setPhone(storedPhone);
+                    setAddressLine1(storedAddressLine1);
+                    setAddressLine2(storedAddressLine2);
+                    setProvince(storedProvince);
+                    setDistrict(storedDistrict);
+                    setSubDistrict(storedSubDistrict);
+                    setPostalCode(storedPostalCode);
+                    setSavedProfile({
+                        firstName: storedFirstName,
+                        lastName: storedLastName,
+                        phone: storedPhone,
+                        addressLine1: storedAddressLine1,
+                        addressLine2: storedAddressLine2,
+                        province: storedProvince,
+                        district: storedDistrict,
+                        subDistrict: storedSubDistrict,
+                        postalCode: storedPostalCode,
+                    });
+                }
+            }).catch(() => {
+                const storedFirstName = localStorage.getItem("gachapay_first_name") || "";
+                const storedLastName = localStorage.getItem("gachapay_last_name") || "";
+                const storedPhone = formatPhoneNumber(localStorage.getItem("gachapay_phone") || "");
+                const storedAddressLine1 = localStorage.getItem("gachapay_address_line1") || "";
+                const storedAddressLine2 = localStorage.getItem("gachapay_address_line2") || "";
+                const storedProvince = localStorage.getItem("gachapay_province") || "";
+                const storedDistrict = localStorage.getItem("gachapay_district") || "";
+                const storedSubDistrict = localStorage.getItem("gachapay_sub_district") || "";
+                const storedPostalCode = localStorage.getItem("gachapay_postal_code") || "";
+
+                setFirstName(storedFirstName);
+                setLastName(storedLastName);
+                setPhone(storedPhone);
+                setAddressLine1(storedAddressLine1);
+                setAddressLine2(storedAddressLine2);
+                setProvince(storedProvince);
+                setDistrict(storedDistrict);
+                setSubDistrict(storedSubDistrict);
+                setPostalCode(storedPostalCode);
+                setSavedProfile({
+                    firstName: storedFirstName,
+                    lastName: storedLastName,
+                    phone: storedPhone,
+                    addressLine1: storedAddressLine1,
+                    addressLine2: storedAddressLine2,
+                    province: storedProvince,
+                    district: storedDistrict,
+                    subDistrict: storedSubDistrict,
+                    postalCode: storedPostalCode,
+                });
+            })
         ]).finally(() => setLoading(false));
-
-        // Load values from localStorage
-        const storedFirstName = localStorage.getItem("gachapay_first_name") || "";
-        const storedLastName = localStorage.getItem("gachapay_last_name") || "";
-        const storedPhone = formatPhoneNumber(localStorage.getItem("gachapay_phone") || "");
-        const storedAddressLine1 = localStorage.getItem("gachapay_address_line1") || "";
-        const storedAddressLine2 = localStorage.getItem("gachapay_address_line2") || "";
-        const storedProvince = localStorage.getItem("gachapay_province") || "";
-        const storedDistrict = localStorage.getItem("gachapay_district") || "";
-        const storedSubDistrict = localStorage.getItem("gachapay_sub_district") || "";
-        const storedPostalCode = localStorage.getItem("gachapay_postal_code") || "";
-
-        setFirstName(storedFirstName);
-        setLastName(storedLastName);
-        setPhone(storedPhone);
-        setAddressLine1(storedAddressLine1);
-        setAddressLine2(storedAddressLine2);
-        setProvince(storedProvince);
-        setDistrict(storedDistrict);
-        setSubDistrict(storedSubDistrict);
-        setPostalCode(storedPostalCode);
-        setSavedProfile({
-            firstName: storedFirstName,
-            lastName: storedLastName,
-            phone: storedPhone,
-            addressLine1: storedAddressLine1,
-            addressLine2: storedAddressLine2,
-            province: storedProvince,
-            district: storedDistrict,
-            subDistrict: storedSubDistrict,
-            postalCode: storedPostalCode,
-        });
     }, [user]);
 
     const handleSaveProfile = async (e: React.FormEvent) => {
@@ -171,6 +233,32 @@ export default function AccountPage() {
             localStorage.setItem("gachapay_district", district);
             localStorage.setItem("gachapay_sub_district", subDistrict);
             localStorage.setItem("gachapay_postal_code", postalCode);
+
+            // Save/update address in backend database
+            const recipientName = `${firstName.trim()} ${lastName.trim()}`.trim();
+            const addressData = {
+                recipientName,
+                phone: phone.replace(/\D/g, ""),
+                addressLine1,
+                addressLine2: addressLine2 || null,
+                subDistrict: subDistrict || null,
+                district,
+                province,
+                postalCode,
+                isDefault: true,
+            };
+
+            try {
+                if (activeAddressId) {
+                    const res = await api.updateAddress(activeAddressId, addressData);
+                    if (res?.id) setActiveAddressId(res.id);
+                } else {
+                    const res = await api.addAddress(addressData);
+                    if (res?.id) setActiveAddressId(res.id);
+                }
+            } catch (addrErr) {
+                console.error("Failed to save address to DB:", addrErr);
+            }
 
             setSavedProfile({
                 firstName,
