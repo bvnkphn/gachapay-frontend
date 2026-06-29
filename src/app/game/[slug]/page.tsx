@@ -664,13 +664,15 @@ export default function GameTopupPage() {
                                             setPaymentMethod("qr");
                                         }}
                                         className={cn(
-                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer select-none",
-                                            paymentMethod === "qr"
-                                                ? "border-primary bg-primary/10 text-primary font-bold"
-                                                : "border-border/30 hover:border-primary/50 text-muted-foreground"
+                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
+                                            !isLoggedIn
+                                                ? "opacity-50 border-border/20 bg-muted/10 text-muted-foreground cursor-pointer"
+                                                : paymentMethod === "qr"
+                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
+                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
                                         )}
                                     >
-                                        <QrCode className="w-5 h-5 mb-1 text-primary" />
+                                        <QrCode className={cn("w-5 h-5 mb-1", !isLoggedIn ? "text-muted-foreground/60" : "text-primary")} />
                                         <span className="text-[11px]">QR Code</span>
                                     </button>
                                 </div>
