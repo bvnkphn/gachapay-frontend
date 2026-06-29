@@ -117,15 +117,17 @@ export default function AccountInvitePage() {
 
                 {/* Main Card */}
                 <div className="space-y-6">
-                    <div className="glass-card rounded-3xl border border-border/50 p-6 md:p-8">
+                    {/* Refer and Earn Card */}
+                    <div className="glass-card rounded-3xl border border-border/50 p-6 md:p-8 relative overflow-hidden shadow-lg">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
                         <div className="flex items-start gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center shrink-0">
                                 <Users className="w-7 h-7" />
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-foreground">แนะนำและรับโบนัส</p>
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                    แนะนำเพื่อนมาใช้งาน เมื่อเพื่อนซื้อสินค้าสำเร็จ รับทันที 10 COIN ต่อคน (สูงสุด 10 คน)
+                                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                                    แนะนำเพื่อนมาใช้งาน เมื่อเพื่อนซื้อสินค้าหรือเติมเงินครั้งแรกสำเร็จ รับทันที 10 COIN ต่อคน (สูงสุด 10 คน)
                                 </p>
                             </div>
                         </div>
@@ -136,30 +138,29 @@ export default function AccountInvitePage() {
                                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                     ลิงก์เชิญเพื่อนของคุณ
                                 </label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        readOnly
-                                        value={referralLink}
-                                        className="bg-muted/30 border-border/50 text-xs h-11 focus-visible:ring-cyan-500"
-                                    />
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-cyan-500/60 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all duration-300 flex-1">
+                                        <Input
+                                            readOnly
+                                            value={referralLink}
+                                            className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"
+                                        />
+                                        <Button
+                                            onClick={handleCopy}
+                                            className="h-10 px-4 sm:px-6 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold transition-all text-xs flex items-center gap-1.5 cursor-pointer shrink-0"
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
+                                            {copied ? "คัดลอกแล้ว!" : "คัดลอกลิงก์"}
+                                        </Button>
+                                    </div>
+                                    <Button
+                                        className="h-13 sm:h-auto px-6 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 text-cyan-500 font-bold transition-all rounded-2xl cursor-pointer"
+                                        onClick={handleShare}
+                                    >
+                                        <Share2 className="w-4 h-4 mr-2" />
+                                        แชร์ให้เพื่อน
+                                    </Button>
                                 </div>
-                            </div>
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 h-11 border-border/60 hover:bg-muted text-foreground transition-colors"
-                                    onClick={handleCopy}
-                                >
-                                    <Copy className="w-4 h-4 mr-2" />
-                                    {copied ? "คัดลอกแล้ว!" : "คัดลอกลิงก์"}
-                                </Button>
-                                <Button
-                                    className="flex-1 h-11 bg-cyan-500/10 border border-cyan-500/20 hover:bg-cyan-500/20 text-cyan-500 font-bold transition-all"
-                                    onClick={handleShare}
-                                >
-                                    <Share2 className="w-4 h-4 mr-2" />
-                                    แชร์ให้เพื่อน
-                                </Button>
                             </div>
                         </div>
 
@@ -169,7 +170,7 @@ export default function AccountInvitePage() {
                                 <span className="text-muted-foreground">สิทธิ์รับโบนัสจากการเชิญเพื่อน</span>
                                 <span className="text-amber-500">{stats.completed} / 10 คน</span>
                             </div>
-                            <div className="w-full h-2 rounded-full bg-muted overflow-hidden border border-border/10">
+                            <div className="w-full h-2.5 rounded-full bg-muted overflow-hidden border border-border/10">
                                 <div 
                                     className="h-full bg-gradient-to-r from-amber-500 to-yellow-500 rounded-full transition-all duration-500"
                                     style={{ width: `${Math.min((stats.completed / 10) * 100, 100)}%` }}
@@ -189,7 +190,7 @@ export default function AccountInvitePage() {
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-foreground">ระบุผู้แนะนำเพื่อน</p>
-                                <p className="mt-1 text-xs text-muted-foreground">
+                                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                                     หากเพื่อนของคุณแนะนำมา สามารถกรอกรหัสหรือลิงก์ผู้แนะนำย้อนหลังที่นี่ได้ (กรอกได้ก่อนการทำรายการซื้อสินค้า/เติมเงินครั้งแรกเท่านั้น)
                                 </p>
                             </div>
@@ -197,13 +198,17 @@ export default function AccountInvitePage() {
 
                         {referredBy ? (
                             /* Case 3: Already filled/referred */
-                            <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div className="space-y-1">
-                                    <p className="text-xs text-muted-foreground">คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว</p>
-                                    <p className="text-sm font-semibold text-emerald-500">{referredBy.email}</p>
+                            <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]">
+                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                                    <CheckCircle2 className="w-5 h-5" />
                                 </div>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 w-fit">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs text-muted-foreground font-medium">คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว</p>
+                                    <p className="text-sm font-bold text-emerald-500 dark:text-emerald-400 mt-0.5 truncate">
+                                        {referredBy.name ? `${referredBy.name} (${referredBy.email})` : referredBy.email}
+                                    </p>
+                                </div>
+                                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
                                     บันทึกแล้ว
                                 </span>
                             </div>
@@ -217,53 +222,73 @@ export default function AccountInvitePage() {
                         ) : (
                             /* Case 1: No purchase yet, no referrer -> Input enabled */
                             <div className="space-y-3">
-                                <div className="flex gap-2">
+                                <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-300">
                                     <Input
                                         placeholder="วางลิงก์เชิญเพื่อน หรือกรอกรหัสแนะนำเพื่อน"
                                         value={referrerInput}
                                         onChange={(e) => setReferrerInput(e.target.value)}
-                                        className="bg-muted/30 border-border/50 text-xs h-11 focus-visible:ring-primary"
+                                        className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"
                                         disabled={submittingReferrer}
                                     />
                                     <Button
                                         onClick={handleSaveReferrer}
                                         disabled={submittingReferrer || !referrerInput.trim()}
-                                        className="h-11 bg-primary text-primary-foreground font-bold px-6 rounded-xl hover:opacity-90 active:scale-95 transition-all shrink-0 cursor-pointer"
+                                        className="h-10 px-6 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 active:scale-95 transition-all shrink-0 cursor-pointer text-xs"
                                     >
                                         {submittingReferrer ? "กำลังบันทึก..." : "ยืนยัน"}
                                     </Button>
                                 </div>
                                 <p className="text-[10px] text-muted-foreground/75">
-                                    * สามารถป้อนรหัส เช่น "12" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้
+                                    * สามารถป้อนรหัส เช่น "Xy7Zk9Pq2Wv1" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้
                                 </p>
                             </div>
                         )}
                     </div>
 
                     {/* Stats Dashboard */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div className="glass-card rounded-2xl p-4 border border-border/40 text-center">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">เชิญทั้งหมด</p>
-                            <p className="text-xl font-black mt-1 text-foreground">{stats.total} คน</p>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="glass-card rounded-2xl p-4 border border-border/40 hover:border-border/60 transition-all flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-muted/60 text-muted-foreground flex items-center justify-center shrink-0">
+                                <Users className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">เชิญทั้งหมด</p>
+                                <p className="text-lg font-black mt-0.5 text-foreground">{stats.total} คน</p>
+                            </div>
                         </div>
-                        <div className="glass-card rounded-2xl p-4 border border-border/40 text-center">
-                            <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">สำเร็จ</p>
-                            <p className="text-xl font-black mt-1 text-emerald-500">{stats.completed} คน</p>
+                        <div className="glass-card rounded-2xl p-4 border border-border/40 hover:border-emerald-500/30 transition-all flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                <CheckCircle2 className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-emerald-500 uppercase tracking-wider">สำเร็จ</p>
+                                <p className="text-lg font-black mt-0.5 text-emerald-500">{stats.completed} คน</p>
+                            </div>
                         </div>
-                        <div className="glass-card rounded-2xl p-4 border border-border/40 text-center">
-                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">รอดำเนินการ</p>
-                            <p className="text-xl font-black mt-1 text-muted-foreground">{stats.pending} คน</p>
+                        <div className="glass-card rounded-2xl p-4 border border-border/40 hover:border-border/60 transition-all flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-muted/60 text-muted-foreground flex items-center justify-center shrink-0">
+                                <Clock className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">รอดำเนินการ</p>
+                                <p className="text-lg font-black mt-0.5 text-muted-foreground">{stats.pending} คน</p>
+                            </div>
                         </div>
-                        <div className="glass-card rounded-2xl p-4 border border-border/40 text-center">
-                            <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">โบนัสที่ได้รับ</p>
-                            <p className="text-xl font-black mt-1 text-amber-500">+{stats.totalReward} COIN</p>
+                        <div className="glass-card rounded-2xl p-4 border border-border/40 hover:border-amber-500/30 transition-all flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 flex items-center justify-center shrink-0">
+                                <Gift className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">โบนัสที่ได้รับ</p>
+                                <p className="text-lg font-black mt-0.5 text-amber-500">+{stats.totalReward} COIN</p>
+                            </div>
                         </div>
                     </div>
 
                     {/* Referrals List Table */}
-                    <div className="glass-card rounded-3xl border border-border/50 p-6">
+                    <div className="glass-card rounded-3xl border border-border/50 p-6 shadow-md">
                         <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
-                            <Gift className="w-4 h-4 text-cyan-500" />
+                            <Gift className="w-4.5 h-4.5 text-cyan-500" />
                             สถานะการช้อปของเพื่อน
                         </h2>
                         
