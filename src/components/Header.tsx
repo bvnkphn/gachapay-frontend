@@ -105,6 +105,14 @@ export function Header() {
         return () => window.removeEventListener("gachapay_bookmarks_changed", handleUpdate);
     }, [allGames]);
 
+    useEffect(() => {
+        const handleOpenGacha = () => {
+            setShowGachaModal(true);
+        };
+        window.addEventListener("open-gacha-modal", handleOpenGacha);
+        return () => window.removeEventListener("open-gacha-modal", handleOpenGacha);
+    }, []);
+
     // Check if current page is a game page
     const isGamePage = pathname?.startsWith('/game/');
 

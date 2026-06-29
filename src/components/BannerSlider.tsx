@@ -326,7 +326,17 @@ export default function BannerSlider() {
                 >
                   ปิด
                 </button>
-                {selectedBanner.uuid === 'mock-2' ? (
+                 {selectedBanner.uuid === 'mock-1' ? (
+                  <button
+                    onClick={() => {
+                      window.dispatchEvent(new Event("open-gacha-modal"));
+                      setSelectedBanner(null);
+                    }}
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20 animate-pulse"
+                  >
+                    🎰 หมุนวงล้อนำโชค
+                  </button>
+                ) : selectedBanner.uuid === 'mock-2' ? (
                   <button
                     onClick={() => {
                       navigator.clipboard.writeText("WELCOME");
