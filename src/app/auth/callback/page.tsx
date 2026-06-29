@@ -43,6 +43,9 @@ function AuthCallbackContent() {
                         token
                     );
                     toast.success("เข้าสู่ระบบสำเร็จ");
+                    if (typeof window !== "undefined") {
+                        sessionStorage.setItem("gachapay_show_celebration", "true");
+                    }
                     router.push("/");
                 }
             } catch (error) {
