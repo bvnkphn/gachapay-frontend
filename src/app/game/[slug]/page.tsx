@@ -114,7 +114,7 @@ export default function GameTopupPage() {
                     setWalletBalance(user.balance ?? 0);
                 });
         }
-    }, [user, updateUser]);
+    }, [user?.id, updateUser]);
 
     useEffect(() => {
         fetchBalance();

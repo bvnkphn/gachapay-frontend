@@ -1069,7 +1069,7 @@ export default function BalancePage() {
                 setPendingTx(null);
             }
         });
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         if (!user) return;
@@ -1093,7 +1093,7 @@ export default function BalancePage() {
                 if (pending) setPendingTx({ reference_id: pending.reference_id, amount: pending.amount, expired_at: pending.expired_at });
             }),
         ]);
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         window.addEventListener("balance-changed", refreshData);

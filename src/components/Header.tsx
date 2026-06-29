@@ -191,7 +191,7 @@ export function Header() {
         return () => {
             window.removeEventListener("balance-changed", fetchTopupsAndSpins);
         };
-    }, [user]);
+    }, [user?.id]);
 
     const fetchBalance = () => {
         if (user) {
@@ -213,7 +213,7 @@ export function Header() {
         return () => {
             window.removeEventListener("balance-changed", fetchBalance);
         };
-    }, [user]);
+    }, [user?.id]);
 
     useEffect(() => {
         if (user) {
