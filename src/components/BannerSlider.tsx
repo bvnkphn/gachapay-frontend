@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 
 interface Banner {
   id: number
@@ -81,6 +82,7 @@ export default function BannerSlider() {
   const [isMobile, setIsMobile] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const dragStart = useRef<number | null>(null)
+  const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null)
 
   // Track responsive screen size
   useEffect(() => {
@@ -193,9 +195,7 @@ export default function BannerSlider() {
                 <div
                   key={banner.uuid}
                   onClick={() => {
-                    if (banner.redirectUrl) {
-                      router.push(banner.redirectUrl)
-                    }
+                    setSelectedBanner(banner)
                   }}
                   className={cn(
                     "absolute overflow-hidden border select-none transition-all cursor-pointer group",
@@ -293,6 +293,64 @@ export default function BannerSlider() {
                 aria-label={"Go to slide " + (i + 1)}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Banner Detail Popup Modal */}
+      {selectedBanner && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-card rounded-2xl w-full max-w-md shadow-2xl border border-border/40 overflow-hidden relative animate-in scale-in duration-300">
+            {/* Image header */}
+            <div className="relative h-44 w-full bg-muted">
+              <img src={selectedBanner.image} alt={selectedBanner.title} className="w-full h-full object-cover" />
+              <button
+                onClick={() => setSelectedBanner(null)}
+                className="absolute top-3 right-3 p-1.5 rounded-full bg-black/50 hover:bg-black/70 text-white transition-colors cursor-pointer font-bold w-7 h-7 flex items-center justify-center border-none"
+              >
+                ✗
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-foreground mb-3 text-cyan-400">{selectedBanner.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-6 whitespace-pre-line">
+                {selectedBanner.description}
+              </p>
+
+              {/* Action buttons based on banner */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setSelectedBanner(null)}
+                  className="flex-1 py-3 px-4 border border-border text-foreground hover:bg-muted/50 rounded-xl font-semibold transition cursor-pointer"
+                >
+                  ปิด
+                </button>
+                {selectedBanner.uuid === 'mock-2' ? (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText("WELCOME");
+                      toast.success("คัดลอกโค้ดส่วนลด WELCOME เรียบร้อยแล้ว!");
+                      setSelectedBanner(null);
+                      router.push(selectedBanner.redirectUrl);
+                    }}
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
+                  >
+                    คัดลอกโค้ดลด 15%
+                  </button>
+                ) : selectedBanner.redirectUrl ? (
+                  <button
+                    onClick={() => {
+                      setSelectedBanner(null);
+                      router.push(selectedBanner.redirectUrl);
+                    }}
+                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
+                  >
+                    เข้าร่วมกิจกรรม
+                  </button>
+                ) : null}
+              </div>
+            </div>
           </div>
         </div>
       )}
