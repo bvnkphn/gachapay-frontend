@@ -255,6 +255,12 @@ export default function GameTopupPage() {
             return;
         }
 
+        if (!selectedPackage) {
+            setWarningText("กรุณาเลือกแพ็กเกจที่ต้องการเติม");
+            setShowWarningModal(true);
+            return;
+        }
+
         const totalAmount = selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100);
 
         // Check balance for Coin payment
