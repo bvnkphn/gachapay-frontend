@@ -53,25 +53,30 @@ export async function apiRequest(
                 }
             } catch {}
         }
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+            const error = await response.clone().json();
+            if (error && error.message) {
+                errorMessage = error.message;
+            }
+        } catch {}
+
         if (response.status === 401) {
             // Do not intercept login attempts with session expiration redirects/messages
             if (endpoint.includes("/auth/login")) {
-                const error = await response.json().catch(() => ({ message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" }));
-                throw new Error(error.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+                throw new Error(errorMessage || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
             }
             if (typeof window !== "undefined") {
                 const isAdminPage = window.location.pathname.startsWith("/admin");
                 if (!isAdminPage) {
                     // Only clear user auth and redirect for non-admin pages
                     localStorage.removeItem("auth-storage");
-                    window.location.href = "/login?expired=true";
+                    window.location.href = `/login?expired=true&err=${encodeURIComponent(errorMessage)}&endpoint=${encodeURIComponent(endpoint)}`;
                 }
             }
-            throw new Error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+            throw new Error(`เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง (${endpoint} -> ${errorMessage})`);
         }
-        const error = await response.json().catch(() => ({ message: "Request failed" }));
-        const errorMessage = error.message || `HTTP ${response.status}: ${response.statusText}`;
-        console.error('API Error Response:', { status: response.status, error });
+        console.error('API Error Response:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
     }
 
