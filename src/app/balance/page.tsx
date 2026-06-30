@@ -15,9 +15,9 @@ import { toast } from "sonner";
 const PRESET_AMOUNTS = [50, 100, 300, 500, 1000, 3000];
 
 const PAYMENT_METHODS = [
-    { id: "promptpay", name: "PromptPay QR", desc: "สแกน QR Code จ่ายเงิน", icon: "QR", color: "#1a56db" },
-    { id: "bank_transfer", name: "Bank Transfer", desc: "โอนเงินตรงเข้าบัญชีธนาคาร", icon: "B", color: "#0d9488" },
-    { id: "truemoney", name: "TrueMoney Wallet", desc: "ชำระผ่านเบอร์วอลเล็ท", icon: "TW", color: "#f97316" },
+    { id: "promptpay", name: "PromptPay QR", desc: "สแกน QR Code จ่ายเงิน", icon: "QR", color: "#1a56db", disabled: false },
+    { id: "bank_transfer", name: "Bank Transfer", desc: "โอนเงินตรงเข้าบัญชีธนาคาร", icon: "B", color: "#0d9488", disabled: false },
+    { id: "truemoney", name: "TrueMoney Wallet", desc: "ชำระผ่านเบอร์วอลเล็ท", icon: "TW", color: "#f97316", disabled: false },
 ];
 
 const BANKS = [
